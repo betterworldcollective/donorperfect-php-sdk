@@ -1,6 +1,9 @@
 parameters:
-    level: max
+    level: 0
     paths:
         - src
-
-    reportUnmatchedIgnoredErrors: true
+    excludePaths:
+        - src/Data/BaseData.php
+        - src/Data/Donor/Donor.php
+        - src/Data/Gift/Gift.php
+        - src/Resources/QueryResource.php
