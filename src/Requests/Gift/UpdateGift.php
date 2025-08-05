@@ -14,14 +14,14 @@ class UpdateGift extends Request implements HasBody
 
     protected Method $method = Method::PUT;
 
-    public function __construct(
-        protected int $giftId,
-        protected array $properties
-    ) {}
+    /**
+     * @param array<string, mixed> $properties
+     */
+    public function __construct(protected array $properties) {}
 
     public function resolveEndpoint(): string
     {
-        return "/gift/v1/gifts/{$this->giftId}";
+        return '/gifts/' . $this->properties['gift_id'];
     }
 
     /**

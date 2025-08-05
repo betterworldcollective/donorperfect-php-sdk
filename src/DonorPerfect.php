@@ -126,6 +126,9 @@ class DonorPerfect extends Connector
     /**
      * Save donor using saveDonor
      */
+        /**
+     * @param array<string, mixed> $data
+     */
     public function saveDonor(array $data): int
     {
         $request = new SaveDonor($data);
@@ -136,6 +139,9 @@ class DonorPerfect extends Connector
 
     /**
      * Save gift using saveGift
+     */
+        /**
+     * @param array<string, mixed> $data
      */
     public function saveGift(array $data): int
     {

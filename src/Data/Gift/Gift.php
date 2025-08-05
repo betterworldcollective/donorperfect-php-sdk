@@ -21,19 +21,22 @@ class Gift extends BaseData
         public ?string $userId = null,
     ) {}
 
-    public static function from(array $data): Gift
+    /**
+     * @param array<string, mixed> $data
+     */
+    public static function from(array $data): self
     {
         return new self(
-            giftId: $data['gift_id'],
-            donorId: $data['donor_id'],
-            giftDate: $data['gift_date'],
-            amount: (float) $data['amount'],
-            giftType: GiftType::from($data['gift_type'] ?? 'G'),
-            paymentType: PaymentType::from($data['payment_type'] ?? 'CC'),
-            reference: $data['reference'] ?? null,
-            externalId: $data['external_id'] ?? null,
-            notes: $data['notes'] ?? null,
-            userId: $data['user_id'] ?? null,
+            giftId: (string) ($data['gift_id'] ?? ''),
+            donorId: (string) ($data['donor_id'] ?? ''),
+            giftDate: (string) ($data['gift_date'] ?? ''),
+            amount: (float) ($data['amount'] ?? 0.0),
+            giftType: GiftType::from((string) ($data['gift_type'] ?? 'G')),
+            paymentType: PaymentType::from((string) ($data['payment_type'] ?? 'CC')),
+            reference: isset($data['reference']) ? (string) $data['reference'] : null,
+            externalId: isset($data['external_id']) ? (string) $data['external_id'] : null,
+            notes: isset($data['notes']) ? (string) $data['notes'] : null,
+            userId: isset($data['user_id']) ? (string) $data['user_id'] : null,
         );
     }
 }

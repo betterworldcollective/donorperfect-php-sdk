@@ -2,16 +2,21 @@
 
 namespace DonorPerfect\Requests\Donor;
 
+use Saloon\Contracts\Body\HasBody;
 use Saloon\Enums\Method;
 use Saloon\Http\Request;
+use Saloon\Traits\Body\HasXmlBody;
 use Saloon\Traits\Plugins\AlwaysThrowOnErrors;
 
-class SaveDonor extends Request
+class SaveDonor extends Request implements HasBody
 {
-    use AlwaysThrowOnErrors;
+    use AlwaysThrowOnErrors, HasXmlBody;
 
     protected Method $method = Method::GET;
 
+    /**
+     * @param array<string, mixed> $properties
+     */
     public function __construct(protected array $properties) {}
 
     public function resolveEndpoint(): string
@@ -21,15 +26,10 @@ class SaveDonor extends Request
 
     protected function defaultQuery(): array
     {
-        // Format properties as comma-separated string for dp_savedonor
-        $formattedProps = [];
-        foreach ($this->properties as $key => $value) {
-            $formattedProps[] = "$key=$value";
-        }
-        $propsString = implode(',', $formattedProps);
+        $action = 'dp_savedonor(' . implode(',', array_map(fn($key, $value) => "{$key}='{$value}'", array_keys($this->properties), $this->properties)) . ')';
         
         return [
-            'action' => "dp_savedonor($propsString)",
+            'action' => $action,
         ];
     }
 }

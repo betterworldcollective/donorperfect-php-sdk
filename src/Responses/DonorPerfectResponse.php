@@ -21,6 +21,7 @@ class DonorPerfectResponse extends Response
 
     /**
      * Get the response as array from XML
+     * @return array<string, mixed>
      */
     public function xmlArray(): array
     {
@@ -29,6 +30,12 @@ class DonorPerfectResponse extends Response
             return [];
         }
 
-        return json_decode(json_encode($xml), true);
+        $jsonString = json_encode($xml);
+        if ($jsonString === false) {
+            return [];
+        }
+
+        $result = json_decode($jsonString, true);
+        return is_array($result) ? $result : [];
     }
 }

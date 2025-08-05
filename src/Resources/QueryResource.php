@@ -8,9 +8,13 @@ use Saloon\Http\Request;
 class QueryResource extends BaseResource
 {
     public function __construct(
-        protected \DonorPerfect\DonorPerfect $connector
+        protected DonorPerfect $connector
     ) {}
 
+    /**
+     * @param array<string, mixed> $filters
+     * @return array<string, mixed>
+     */
     public function queryTable(string $tableName, array $filters = []): array
     {
         $request = new class($tableName, $filters) extends Request
@@ -45,6 +49,6 @@ class QueryResource extends BaseResource
 
         $response = $this->connector->send($request);
 
-        return $response->xmlArray();
+        return $response->xmlArray() ?? [];
     }
 }

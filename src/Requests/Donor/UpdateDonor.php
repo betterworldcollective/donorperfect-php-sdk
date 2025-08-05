@@ -14,14 +14,14 @@ class UpdateDonor extends Request implements HasBody
 
     protected Method $method = Method::PUT;
 
-    public function __construct(
-        protected int $donorId,
-        protected array $properties
-    ) {}
+    /**
+     * @param array<string, mixed> $properties
+     */
+    public function __construct(protected array $properties) {}
 
     public function resolveEndpoint(): string
     {
-        return "/donor/v1/donors/{$this->donorId}";
+        return '/donors/' . $this->properties['donor_id'];
     }
 
     /**
