@@ -2,6 +2,7 @@
 
 namespace DonorPerfect\Resources;
 
+use DonorPerfect\DonorPerfect;
 use Saloon\Http\BaseResource;
 use Saloon\Http\Request;
 
@@ -48,7 +49,13 @@ class QueryResource extends BaseResource
         };
 
         $response = $this->connector->send($request);
+        $result = $response->xmlArray();
+        
+        if (!is_array($result)) {
+            return [];
+        }
 
-        return $response->xmlArray() ?? [];
+        /** @var array<string, mixed> $result */
+        return $result;
     }
 }

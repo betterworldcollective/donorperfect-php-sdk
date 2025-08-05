@@ -36,6 +36,11 @@ class DonorPerfectResponse extends Response
         }
 
         $result = json_decode($jsonString, true);
-        return is_array($result) ? $result : [];
+        if (!is_array($result)) {
+            return [];
+        }
+
+        /** @var array<string, mixed> $result */
+        return $result;
     }
 }

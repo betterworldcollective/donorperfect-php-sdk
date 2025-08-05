@@ -2,12 +2,14 @@
 
 namespace DonorPerfect;
 
+use DonorPerfect\Authentications\DonorPerfectToken;
 use DonorPerfect\Requests\CallSqlRequest;
 use DonorPerfect\Requests\Donor\SaveDonor;
 use DonorPerfect\Requests\Gift\SaveGift;
 use DonorPerfect\Requests\TestConnection;
 use DonorPerfect\Responses\DonorPerfectResponse;
 use Exception;
+use Saloon\Contracts\Authenticator;
 use Saloon\Http\Connector;
 use Saloon\Http\Response;
 
@@ -92,20 +94,31 @@ class DonorPerfect extends Connector
     }
 
     /**
+     * Get the authenticator for the request
+     */
+    public function getAuthenticator(): ?Authenticator
+    {
+        return new DonorPerfectToken($this->apiKey);
+    }
+
+    /**
      * Test connection using SQL query
      */
     public function testConnection(): bool
     {
         try {
-            $request = new TestConnection;
+            $request = new TestConnection();
             $response = $this->send($request);
-
+            
             // Check if response contains success
             $body = $response->body();
             if (strpos($body, 'success') !== false && strpos($body, 'false') !== false) {
                 return false;
             }
-
+            // If we get a valid XML response with records, it's successful
+            if (strpos($body, '<record>') !== false) {
+                return true;
+            }
             return true;
         } catch (Exception $e) {
             return false;
@@ -119,35 +132,40 @@ class DonorPerfect extends Connector
     {
         $request = new CallSqlRequest($sql);
         $response = $this->send($request);
-
-        return $response->xml();
+        return $response->xmlArray();
     }
 
     /**
      * Save donor using saveDonor
      */
-        /**
+    /**
      * @param array<string, mixed> $data
      */
     public function saveDonor(array $data): int
     {
         $request = new SaveDonor($data);
         $response = $this->send($request);
-
-        return (int) $response->xml()->donor_id ?? 0;
+        $xml = $response->xml();
+        if ($xml instanceof \SimpleXMLElement && isset($xml->donor_id)) {
+            return $xml->donor_id;
+        }
+        return 0;
     }
 
     /**
      * Save gift using saveGift
      */
-        /**
+    /**
      * @param array<string, mixed> $data
      */
     public function saveGift(array $data): int
     {
         $request = new SaveGift($data);
         $response = $this->send($request);
-
-        return (int) $response->xml()->gift_id ?? 0;
+        $xml = $response->xml();
+        if ($xml instanceof \SimpleXMLElement && isset($xml->gift_id)) {
+            return $xml->gift_id;
+        }
+        return 0;
     }
 }
