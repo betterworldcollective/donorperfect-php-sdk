@@ -1,0 +1,49 @@
+{
+    "name": "betterworldcollective/donorperfect-php-sdk",
+    "require": {
+        "php": "^8.2",
+        "saloonphp/saloon": "^3.14",
+        "illuminate/collections": "^11.0.8 | ^12.7",
+        "illuminate/support": "^11.0.8 | ^12.7"
+    },
+    "require-dev": {
+        "laravel/pint": "^1.22",
+        "pestphp/pest": "^3.8",
+        "symfony/var-dumper": "^7.3",
+        "phpstan/phpstan": "^2.1",
+        "rector/rector": "^2.0"
+    },
+    "minimum-stability": "stable",
+    "autoload": {
+        "psr-4": {
+            "DonorPerfect\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "DonorPerfect\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "refactor": [
+            "./vendor/bin/rector process"
+        ],
+        "format": [
+            "./vendor/bin/pint --dirty"
+        ],
+        "format:test": [
+            "./vendor/bin/pint --dirty --test -v"
+        ],
+        "test": [
+            "./vendor/bin/pest"
+        ],
+        "analyse": [
+            "./vendor/bin/phpstan analyse --memory-limit=-1"
+        ]
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    }
+}

@@ -1,0 +1,30 @@
+# Composer Related
+composer.lock
+/vendor
+
+# Caches
+.phpunit.cache
+.phpunit.result.cache
+/build
+/coverage
+
+# IDE Helper
+.phpstorm.meta.php
+_ide_helper.php
+_ide_helper_models.php
+
+# Editors
+/.idea
+/.fleet
+/.vscode
+
+# Misc
+phpunit.xml
+phpstan.neon
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
