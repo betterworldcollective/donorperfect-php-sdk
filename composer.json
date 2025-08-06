@@ -1,6 +1,6 @@
 {
     "name": "betterworldcollective/donorperfect-php-sdk",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "require": {
         "php": "^8.2",
         "saloonphp/saloon": "^3.14",
