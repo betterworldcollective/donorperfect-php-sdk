@@ -14,7 +14,8 @@ class DonorPerfectToken implements Authenticator
 
     public function __construct(string $apiKey)
     {
-        $this->apiKey = $apiKey;
+        // URL decode the API key to prevent double-encoding when used as query parameter
+        $this->apiKey = urldecode($apiKey);
     }
 
     public function set(PendingRequest $pendingRequest): void

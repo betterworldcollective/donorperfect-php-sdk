@@ -57,7 +57,8 @@ class DonorPerfect extends Connector
      */
     public function __construct(string $apiKey)
     {
-        $this->apiKey = $apiKey;
+        // URL decode the API key to prevent double-encoding when used as query parameter
+        $this->apiKey = urldecode($apiKey);
     }
 
     /**
@@ -107,9 +108,9 @@ class DonorPerfect extends Connector
     public function testConnection(): bool
     {
         try {
-            $request = new TestConnection();
+            $request = new TestConnection;
             $response = $this->send($request);
-            
+
             // Check if response contains success
             $body = $response->body();
             if (strpos($body, 'success') !== false && strpos($body, 'false') !== false) {
@@ -119,6 +120,7 @@ class DonorPerfect extends Connector
             if (strpos($body, '<record>') !== false) {
                 return true;
             }
+
             return true;
         } catch (Exception $e) {
             return false;
@@ -132,6 +134,7 @@ class DonorPerfect extends Connector
     {
         $request = new CallSqlRequest($sql);
         $response = $this->send($request);
+
         return $response->xmlArray();
     }
 
@@ -139,7 +142,7 @@ class DonorPerfect extends Connector
      * Save donor using saveDonor
      */
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public function saveDonor(array $data): int
     {
@@ -149,6 +152,7 @@ class DonorPerfect extends Connector
         if ($xml instanceof \SimpleXMLElement && isset($xml->donor_id)) {
             return $xml->donor_id;
         }
+
         return 0;
     }
 
@@ -156,7 +160,7 @@ class DonorPerfect extends Connector
      * Save gift using saveGift
      */
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public function saveGift(array $data): int
     {
@@ -166,6 +170,7 @@ class DonorPerfect extends Connector
         if ($xml instanceof \SimpleXMLElement && isset($xml->gift_id)) {
             return $xml->gift_id;
         }
+
         return 0;
     }
 }
