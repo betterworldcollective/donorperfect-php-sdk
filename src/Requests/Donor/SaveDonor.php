@@ -12,7 +12,7 @@ class SaveDonor extends Request implements HasBody
 {
     use AlwaysThrowOnErrors, HasXmlBody;
 
-    protected Method $method = Method::GET;
+    protected Method $method = Method::POST;
 
     /**
      * @param array<string, mixed> $properties
@@ -26,10 +26,28 @@ class SaveDonor extends Request implements HasBody
 
     protected function defaultQuery(): array
     {
-        $action = 'dp_savedonor(' . implode(',', array_map(fn($key, $value) => "{$key}='{$value}'", array_keys($this->properties), $this->properties)) . ')';
+        // Build the params string with @ prefix and proper formatting
+        $params = [];
+        foreach ($this->properties as $key => $value) {
+            if ($value === null) {
+                $params[] = "@{$key}=null";
+            } elseif (is_numeric($value)) {
+                $params[] = "@{$key}={$value}";
+            } else {
+                $params[] = "@{$key}='{$value}'";
+            }
+        }
         
         return [
-            'action' => $action,
+            'action' => 'dp_savedonor',
+            'params' => implode(', ', $params),
+        ];
+    }
+
+    protected function defaultHeaders(): array
+    {
+        return [
+            'Content-Type' => 'application/x-www-form-urlencoded',
         ];
     }
 }

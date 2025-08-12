@@ -12,6 +12,7 @@ use Exception;
 use Saloon\Contracts\Authenticator;
 use Saloon\Http\Connector;
 use Saloon\Http\Response;
+use SimpleXMLElement;
 
 class DonorPerfect extends Connector
 {
@@ -113,11 +114,11 @@ class DonorPerfect extends Connector
 
             // Check if response contains success
             $body = $response->body();
-            if (strpos($body, 'success') !== false && strpos($body, 'false') !== false) {
+            if (str_contains($body, 'success') && str_contains($body, 'false')) {
                 return false;
             }
             // If we get a valid XML response with records, it's successful
-            if (strpos($body, '<record>') !== false) {
+            if (str_contains($body, '<record>')) {
                 return true;
             }
 
@@ -149,8 +150,12 @@ class DonorPerfect extends Connector
         $request = new SaveDonor($data);
         $response = $this->send($request);
         $xml = $response->xml();
-        if ($xml instanceof \SimpleXMLElement && isset($xml->donor_id)) {
-            return $xml->donor_id;
+        if ($xml instanceof SimpleXMLElement && isset($xml->record)) {
+            // Extract the donor_id from the record field
+            $record = $xml->record;
+            if (isset($record->field) && isset($record->field['value'])) {
+                return (int) $record->field['value'];
+            }
         }
 
         return 0;
@@ -167,8 +172,12 @@ class DonorPerfect extends Connector
         $request = new SaveGift($data);
         $response = $this->send($request);
         $xml = $response->xml();
-        if ($xml instanceof \SimpleXMLElement && isset($xml->gift_id)) {
-            return $xml->gift_id;
+        if ($xml instanceof SimpleXMLElement && isset($xml->record)) {
+            // Extract the gift_id from the record field
+            $record = $xml->record;
+            if (isset($record->field) && isset($record->field['value'])) {
+                return (int) $record->field['value'];
+            }
         }
 
         return 0;
