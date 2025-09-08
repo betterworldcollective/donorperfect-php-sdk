@@ -4,6 +4,11 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "Pull request number to review (for manual runs)"
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -33,44 +38,54 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install -y jq
 
+      - name: Resolve PR context
+        id: context
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "PR_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+            echo "HEAD_SHA=${{ github.event.pull_request.head.sha }}" >> $GITHUB_ENV
+            echo "BASE_SHA=${{ github.event.pull_request.base.sha }}" >> $GITHUB_ENV
+          else
+            echo "PR_NUMBER=${{ inputs.pr_number }}" >> $GITHUB_ENV
+            # Head/base SHAs are optional for manual runs
+            echo "HEAD_SHA=" >> $GITHUB_ENV
+            echo "BASE_SHA=" >> $GITHUB_ENV
+          fi
+
       - name: Generate PR diff
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh pr diff ${{ github.event.pull_request.number }} --patch > diff.patch
+          gh pr diff "$PR_NUMBER" --patch > diff.patch
 
       - name: Perform Cursor review (summary comment)
         continue-on-error: true
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
           GH_TOKEN: ${{ github.token }}
+          PR_PROMPT: |
+            You are an automated reviewer running in GitHub Actions for a PHP SDK repository.
+
+            Instructions:
+            - Review ONLY the provided unified diff below.
+            - Report at most 12 high-signal findings prioritized by severity.
+            - Focus on: logic errors, security risks, API misuse, breaking changes, tests, and style only if it affects readability/maintainability.
+            - Group findings by file with optional line numbers, use short bullets.
+            - Use emojis for tone: 🚨 critical, 🔒 security, ⚠️ logic, ✨ improvement, 🧪 tests.
+            - Ignore third-party, generated, lock, assets, and docs: vendor/**, .github/**, **/*.md, **/*.json, **/*.lock, **/*.svg, **/*.png, **/*.jpg.
+            - Keep it concise and actionable. Avoid duplicates.
+
+            Format:
+            Return Markdown with sections by file, e.g.:
+            src/Foo.php
+            - ⚠️ L123: concise message and fix suggestion.
+            Add a final 2-3 line summary.
+
+            Diff:
+            ```
         run: |
-          PR_NUMBER=${{ github.event.pull_request.number }}
           REPO=${{ github.repository }}
-          HEAD_SHA=${{ github.event.pull_request.head.sha }}
-          BASE_SHA=${{ github.event.pull_request.base.sha }}
-
-          cat > prompt.txt << 'EOF'
-You are an automated reviewer running in GitHub Actions for a PHP SDK repository.
-
-Instructions:
-- Review ONLY the provided unified diff below.
-- Report at most 12 high-signal findings prioritized by severity.
-- Focus on: logic errors, security risks, API misuse, breaking changes, tests, and style only if it affects readability/maintainability.
-- Group findings by file with optional line numbers, use short bullets.
-- Use emojis for tone: 🚨 critical, 🔒 security, ⚠️ logic, ✨ improvement, 🧪 tests.
-- Ignore third-party, generated, lock, assets, and docs: vendor/**, .github/**, **/*.md, **/*.json, **/*.lock, **/*.svg, **/*.png, **/*.jpg.
-- Keep it concise and actionable. Avoid duplicates.
-
-Format:
-Return Markdown with sections by file, e.g.:
-`src/Foo.php`
-- ⚠️ L123: concise message and fix suggestion.
-Add a final 2-3 line summary.
-
-Diff:
-```
-EOF
+          printf "%s\n" "$PR_PROMPT" > prompt.txt
           cat diff.patch >> prompt.txt
           echo "```" >> prompt.txt
 
