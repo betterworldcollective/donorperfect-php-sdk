@@ -55,28 +55,36 @@ jobs:
             echo "Truncated diff to ${MAX_LINES} lines to keep analysis fast."
           fi
 
-      - name: Perform Cursor review (summary comment)
+      - name: Ensure jq is available
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y jq
+
+      - name: Perform Cursor review (inline + summary)
         continue-on-error: true
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
           GH_TOKEN: ${{ github.token }}
           PR_PROMPT: |
-            You are an automated reviewer running in GitHub Actions for a PHP SDK repository.
+            You are an automated reviewer running in GitHub Actions for a PHP SDK. Review ONLY the unified diff below and return STRICT JSON.
 
-            Instructions:
-            - Review ONLY the provided unified diff below.
-            - Report at most 12 high-signal findings prioritized by severity.
-            - Focus on: logic errors, security risks, API misuse, breaking changes, tests, and style only if it affects readability/maintainability.
-            - Group findings by file with optional line numbers, use short bullets.
-            - Use emojis for tone: 🚨 critical, 🔒 security, ⚠️ logic, ✨ improvement, 🧪 tests.
-            - Ignore third-party, generated, lock, assets, and docs: vendor/**, .github/**, **/*.md, **/*.json, **/*.lock, **/*.svg, **/*.png, **/*.jpg.
-            - Keep it concise and actionable. Avoid duplicates.
+            Goals:
+            - Identify up to 8 high-signal issues on CHANGED LINES ONLY.
+            - Prioritize security, logic, API misuse, breaking changes, missing tests.
+            - Be concise and actionable.
+            - Ignore: vendor/**, .github/**, **/*.md, **/*.json, **/*.lock, **/*.svg, **/*.png, **/*.jpg.
 
-            Format:
-            Return Markdown with sections by file, e.g.:
-            src/Foo.php
-            - ⚠️ L123: concise message and fix suggestion.
-            Add a final 2-3 line summary.
+            Output JSON schema (no markdown, no comments):
+            {
+              "comments": [
+                {
+                  "path": "relative/file.php",
+                  "line": 123,
+                  "body": "1-2 sentence suggestion for this specific line"
+                }
+              ],
+              "summary": "2-3 sentences summarizing the most important issues"
+            }
 
             Diff:
         run: |
@@ -84,22 +92,36 @@ jobs:
           printf "%s\n" "$PR_PROMPT" > prompt.txt
           cat diff.patch >> prompt.txt
 
-          # Ask Cursor to produce a review summary as plain text
-          # If the CLI name differs in your environment, adjust the command accordingly.
-          # Limit runtime to 120 seconds to avoid hanging
+          # Determine head SHA if not provided (manual runs)
+          if [ -z "${HEAD_SHA}" ]; then
+            HEAD_SHA=$(gh pr view "$PR_NUMBER" --json headRefOid -q .headRefOid)
+          fi
+
+          # Ask Cursor to produce structured JSON
           if command -v timeout >/dev/null 2>&1; then
-            timeout 120s cursor-agent --force --output-format=text --print "$(cat prompt.txt)" > review.md || true
+            timeout 120s cursor-agent --force --output-format=json --print "$(cat prompt.txt)" > review.json || true
             EXIT_CODE=$?
           else
-            cursor-agent --force --output-format=text --print "$(cat prompt.txt)" > review.md || true
+            cursor-agent --force --output-format=json --print "$(cat prompt.txt)" > review.json || true
             EXIT_CODE=$?
           fi
 
-          # Fallback if Cursor CLI failed or returned empty
-          if [ ! -s review.md ] || [ "$EXIT_CODE" -eq 124 ]; then
-            echo "Automated review timed out or returned no content. Please rerun or expand limits." > review.md
+          # Validate JSON; fallback to empty if invalid or timeout
+          if ! jq -e . review.json >/dev/null 2>&1 || [ "$EXIT_CODE" -eq 124 ]; then
+            echo '{"comments":[],"summary":"Automated review timed out or returned invalid output."}' > review.json
           fi
 
-          # Post a single summary review comment on the PR
-          gh pr review $PR_NUMBER --comment --body "$(cat review.md)"
+          # Post inline comments (max 8)
+          jq -c '.comments // [] | .[:8][]' review.json | while read -r c; do
+            PATH_FILE=$(echo "$c" | jq -r '.path // empty')
+            LINE_NUM=$(echo "$c" | jq -r '.line // empty')
+            BODY=$(echo "$c" | jq -r '.body // empty')
+            if [ -n "$PATH_FILE" ] && [ -n "$LINE_NUM" ] && [ -n "$BODY" ]; then
+              gh api repos/$REPO/pulls/$PR_NUMBER/comments -f commit_id="$HEAD_SHA" -f path="$PATH_FILE" -F line=$LINE_NUM -f side=RIGHT -f body="$BODY" || true
+            fi
+          done
+
+          # Post summary comment
+          SUMMARY=$(jq -r '.summary // "Automated review completed."' review.json)
+          gh pr review $PR_NUMBER --comment --body "$SUMMARY"
 

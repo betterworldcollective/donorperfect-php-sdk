@@ -4,7 +4,8 @@
       "Read(**)",
       "Shell(gh pr diff)",
       "Shell(gh pr view)",
-      "Shell(gh pr review)"
+      "Shell(gh pr review)",
+      "Shell(gh api)"
     ],
     "deny": [
       "Shell(git push)",
