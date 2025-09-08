@@ -28,11 +28,6 @@ jobs:
           curl https://cursor.com/install -fsS | bash
           echo "$HOME/.cursor/bin" >> $GITHUB_PATH
 
-      - name: Install GitHub CLI
-        uses: cli/cli-action@v2
-        with:
-          version: latest
-
       - name: Ensure jq is available
         run: |
           sudo apt-get update -y
