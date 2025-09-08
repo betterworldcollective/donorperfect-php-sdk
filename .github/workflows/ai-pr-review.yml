@@ -28,11 +28,6 @@ jobs:
           curl https://cursor.com/install -fsS | bash
           echo "$HOME/.cursor/bin" >> $GITHUB_PATH
 
-      - name: Ensure jq is available
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y jq
-
       - name: Resolve PR context
         id: context
         run: |
@@ -51,7 +46,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh pr diff "$PR_NUMBER" --patch > diff.patch
+          gh pr diff "$PR_NUMBER" --patch --unified=0 > diff.patch
+          # Truncate very large diffs to keep review fast
+          MAX_LINES=1200
+          LINES=$(wc -l < diff.patch || echo 0)
+          if [ "$LINES" -gt "$MAX_LINES" ]; then
+            head -n $MAX_LINES diff.patch > diff.truncated && mv diff.truncated diff.patch
+            echo "Truncated diff to ${MAX_LINES} lines to keep analysis fast."
+          fi
 
       - name: Perform Cursor review (summary comment)
         continue-on-error: true
@@ -84,11 +86,18 @@ jobs:
 
           # Ask Cursor to produce a review summary as plain text
           # If the CLI name differs in your environment, adjust the command accordingly.
-          cursor-agent --force --output-format=text --print "$(cat prompt.txt)" > review.md || true
+          # Limit runtime to 120 seconds to avoid hanging
+          if command -v timeout >/dev/null 2>&1; then
+            timeout 120s cursor-agent --force --output-format=text --print "$(cat prompt.txt)" > review.md || true
+            EXIT_CODE=$?
+          else
+            cursor-agent --force --output-format=text --print "$(cat prompt.txt)" > review.md || true
+            EXIT_CODE=$?
+          fi
 
           # Fallback if Cursor CLI failed or returned empty
-          if [ ! -s review.md ]; then
-            echo "No automated review available (Cursor CLI not configured or returned empty)." > review.md
+          if [ ! -s review.md ] || [ "$EXIT_CODE" -eq 124 ]; then
+            echo "Automated review timed out or returned no content. Please rerun or expand limits." > review.md
           fi
 
           # Post a single summary review comment on the PR
