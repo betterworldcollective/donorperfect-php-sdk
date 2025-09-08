@@ -183,4 +183,15 @@ class DonorPerfect extends Connector
 
         return 0;
     }
+
+    /**
+     * Expose API key (for debugging only) — SECURITY RISK
+     *
+     * Making credentials accessible through a public method can leak secrets
+     * through logs or accidental usage. This should not exist in production code.
+     */
+    public function debugExposeApiKey(): string
+    {
+        return $this->apiKey;
+    }
 }
