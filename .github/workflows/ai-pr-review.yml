@@ -1,0 +1,88 @@
+name: AI PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Cursor CLI
+        run: |
+          curl https://cursor.com/install -fsS | bash
+          echo "$HOME/.cursor/bin" >> $GITHUB_PATH
+
+      - name: Install GitHub CLI
+        uses: cli/cli-action@v2
+        with:
+          version: latest
+
+      - name: Ensure jq is available
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y jq
+
+      - name: Generate PR diff
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr diff ${{ github.event.pull_request.number }} --patch > diff.patch
+
+      - name: Perform Cursor review (summary comment)
+        continue-on-error: true
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          REPO=${{ github.repository }}
+          HEAD_SHA=${{ github.event.pull_request.head.sha }}
+          BASE_SHA=${{ github.event.pull_request.base.sha }}
+
+          cat > prompt.txt << 'EOF'
+You are an automated reviewer running in GitHub Actions for a PHP SDK repository.
+
+Instructions:
+- Review ONLY the provided unified diff below.
+- Report at most 12 high-signal findings prioritized by severity.
+- Focus on: logic errors, security risks, API misuse, breaking changes, tests, and style only if it affects readability/maintainability.
+- Group findings by file with optional line numbers, use short bullets.
+- Use emojis for tone: 🚨 critical, 🔒 security, ⚠️ logic, ✨ improvement, 🧪 tests.
+- Ignore third-party, generated, lock, assets, and docs: vendor/**, .github/**, **/*.md, **/*.json, **/*.lock, **/*.svg, **/*.png, **/*.jpg.
+- Keep it concise and actionable. Avoid duplicates.
+
+Format:
+Return Markdown with sections by file, e.g.:
+`src/Foo.php`
+- ⚠️ L123: concise message and fix suggestion.
+Add a final 2-3 line summary.
+
+Diff:
+```
+EOF
+          cat diff.patch >> prompt.txt
+          echo "```" >> prompt.txt
+
+          # Ask Cursor to produce a Markdown review summary
+          # If the CLI name differs in your environment, adjust the command accordingly.
+          cursor-agent --force --output-format=markdown --print "$(cat prompt.txt)" > review.md || true
+
+          # Fallback if Cursor CLI failed or returned empty
+          if [ ! -s review.md ]; then
+            echo "No automated review available (Cursor CLI not configured or returned empty)." > review.md
+          fi
+
+          # Post a single summary review comment on the PR
+          gh pr review $PR_NUMBER --comment --body "$(cat review.md)"
+
