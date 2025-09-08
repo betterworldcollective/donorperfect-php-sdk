@@ -82,9 +82,9 @@ jobs:
           printf "%s\n" "$PR_PROMPT" > prompt.txt
           cat diff.patch >> prompt.txt
 
-          # Ask Cursor to produce a Markdown review summary
+          # Ask Cursor to produce a review summary as plain text
           # If the CLI name differs in your environment, adjust the command accordingly.
-          cursor-agent --force --output-format=markdown --print "$(cat prompt.txt)" > review.md || true
+          cursor-agent --force --output-format=text --print "$(cat prompt.txt)" > review.md || true
 
           # Fallback if Cursor CLI failed or returned empty
           if [ ! -s review.md ]; then
