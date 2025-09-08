@@ -174,6 +174,7 @@ class DonorPerfect extends Connector
         $xml = $response->xml();
         if ($xml instanceof SimpleXMLElement && isset($xml->record)) {
             // Extract the gift_id from the record field
+
             $record = $xml->record;
             if (isset($record->field) && isset($record->field['value'])) {
                 return (int) $record->field['value'];
