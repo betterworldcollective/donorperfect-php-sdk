@@ -77,12 +77,10 @@ jobs:
             Add a final 2-3 line summary.
 
             Diff:
-            ```
         run: |
           REPO=${{ github.repository }}
           printf "%s\n" "$PR_PROMPT" > prompt.txt
           cat diff.patch >> prompt.txt
-          echo "```" >> prompt.txt
 
           # Ask Cursor to produce a Markdown review summary
           # If the CLI name differs in your environment, adjust the command accordingly.
