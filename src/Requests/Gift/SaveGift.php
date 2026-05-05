@@ -2,6 +2,7 @@
 
 namespace DonorPerfect\Requests\Gift;
 
+use DonorPerfect\Support\ActionParams;
 use Saloon\Contracts\Body\HasBody;
 use Saloon\Enums\Method;
 use Saloon\Http\Request;
@@ -15,7 +16,7 @@ class SaveGift extends Request implements HasBody
     protected Method $method = Method::POST;
 
     /**
-     * @param array<string, mixed> $properties
+     * @param  array<string, mixed>  $properties
      */
     public function __construct(protected array $properties) {}
 
@@ -26,21 +27,9 @@ class SaveGift extends Request implements HasBody
 
     protected function defaultQuery(): array
     {
-        // Build the params string with @ prefix and proper formatting
-        $params = [];
-        foreach ($this->properties as $key => $value) {
-            if ($value === null) {
-                $params[] = "@{$key}=null";
-            } elseif (is_numeric($value)) {
-                $params[] = "@{$key}={$value}";
-            } else {
-                $params[] = "@{$key}='{$value}'";
-            }
-        }
-        
         return [
             'action' => 'dp_savegift',
-            'params' => implode(', ', $params),
+            'params' => ActionParams::serialize($this->properties),
         ];
     }
 
