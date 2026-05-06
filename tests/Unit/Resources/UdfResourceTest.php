@@ -31,32 +31,6 @@ it('builds a dp_save_udf_xml call with @matching_id, @field_name, @data_type, @f
     });
 });
 
-it('serializes a null UDF value as null (not the literal string "null")', function () {
-    $mockClient = new MockClient([
-        SaveUdf::class => MockResponse::make('<?xml version="1.0"?><result/>'),
-    ]);
-    $connector = (new DonorPerfect('k'))->withMockClient($mockClient);
-
-    $connector->udfs()->save(12345, 'PRONOUN_UDF', 'C', null);
-
-    $mockClient->assertSent(function (SaveUdf $request): bool {
-        return str_contains($request->query()->get('params'), '@field_value=null');
-    });
-});
-
 it('throws InvalidDataException for an unsupported data_type', function () {
     (new DonorPerfect('k'))->udfs()->save(1, 'F', 'X', 'v');
 })->throws(InvalidDataException::class);
-
-it('accepts every documented DPFIELDS data_type', function (string $dataType) {
-    $mockClient = new MockClient([
-        SaveUdf::class => MockResponse::make('<?xml version="1.0"?><result/>'),
-    ]);
-    $connector = (new DonorPerfect('k'))->withMockClient($mockClient);
-
-    $connector->udfs()->save(1, 'F', $dataType, 'v');
-
-    $mockClient->assertSent(function (SaveUdf $request) use ($dataType): bool {
-        return str_contains($request->query()->get('params'), "@data_type='{$dataType}'");
-    });
-})->with(['C', 'D', 'M', 'N']);

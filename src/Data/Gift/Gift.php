@@ -7,9 +7,9 @@ use DonorPerfect\Data\BaseData;
 class Gift extends BaseData
 {
     public function __construct(
-        public string $giftId = '0',
+        public string $giftId,
         public string $donorId,
-        public string $recordType = 'G',
+        public string $recordType,
         public string $giftDate,
         public float $amount,
         public ?string $glCode = null,
@@ -37,9 +37,9 @@ class Gift extends BaseData
     ) {}
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
-    public static function from(array $data): self
+    public static function from(array $data): static
     {
         return new self(
             giftId: $data['gift_id'] ?? '0',
