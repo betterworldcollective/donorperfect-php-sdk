@@ -28,7 +28,9 @@ class Donor extends BaseData
         public ?string $businessPhone = null,
         public ?string $faxPhone = null,
         public ?string $mobilePhone = null,
+        public ?string $phoneType = null,
         public ?string $email = null,
+        public ?string $emailType = null,
         public string $orgRec = 'N',
         public DonorType $donorType = DonorType::Individual,
         public string $nomail = 'N',
@@ -39,9 +41,9 @@ class Donor extends BaseData
     ) {}
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
-    public static function from(array $data): self
+    public static function from(array $data): static
     {
         return new self(
             firstName: $data['first_name'] ?? '',
@@ -64,7 +66,9 @@ class Donor extends BaseData
             businessPhone: $data['business_phone'] ?? null,
             faxPhone: $data['fax_phone'] ?? null,
             mobilePhone: $data['mobile_phone'] ?? null,
+            phoneType: $data['phone_type'] ?? null,
             email: $data['email'] ?? null,
+            emailType: $data['email_type'] ?? null,
             orgRec: $data['org_rec'] ?? 'N',
             donorType: DonorType::from($data['donor_type'] ?? 'IN'),
             nomail: $data['nomail'] ?? 'N',
@@ -99,7 +103,6 @@ class Donor extends BaseData
             'title' => $this->title,
             'salutation' => $this->salutation,
             'prof_title' => $this->profTitle,
-            'code_edit',
             'opt_line' => $this->optLine,
             'address' => $this->address,
             'address2' => $this->address2,
@@ -112,7 +115,9 @@ class Donor extends BaseData
             'business_phone' => $this->businessPhone,
             'fax_phone' => $this->faxPhone,
             'mobile_phone' => $this->mobilePhone,
+            'phone_type' => $this->phoneType,
             'email' => $this->email,
+            'email_type' => $this->emailType,
             'org_rec' => $this->orgRec,
             'donor_type' => $this->donorType->value,
             'nomail' => $this->nomail,

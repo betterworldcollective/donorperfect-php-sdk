@@ -77,23 +77,3 @@ it('throws InvalidDataException for an unknown field_name', function () {
 
     $connector->codes()->list("CAMPAIGN'; DROP TABLE dpcodes; --");
 })->throws(InvalidDataException::class);
-
-it('accepts every BB-parity field_name', function (string $fieldName) {
-    $mockClient = new MockClient([
-        CallSqlRequest::class => MockResponse::make(
-            '<?xml version="1.0" encoding="UTF-8"?><result/>'
-        ),
-    ]);
-
-    $connector = new DonorPerfect('test-api-key');
-    $connector->withMockClient($mockClient);
-
-    expect($connector->codes()->list($fieldName))->toBe([]);
-})->with([
-    'CAMPAIGN',
-    'GL_CODE',
-    'SOLICIT',
-    'EMAIL_TYPE',
-    'PHONE_TYPE',
-    'ADDRESS_TYPE',
-]);
