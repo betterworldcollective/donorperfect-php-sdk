@@ -1,22 +1,20 @@
 <?php
 
-namespace DonorPerfect\Requests\Donor;
+namespace DonorPerfect\Requests\Flag;
 
 use DonorPerfect\Support\ActionParams;
-use Saloon\Contracts\Body\HasBody;
 use Saloon\Enums\Method;
 use Saloon\Http\Request;
-use Saloon\Traits\Body\HasXmlBody;
 use Saloon\Traits\Plugins\AlwaysThrowOnErrors;
 
-class SaveDonor extends Request implements HasBody
+class SaveFlag extends Request
 {
-    use AlwaysThrowOnErrors, HasXmlBody;
+    use AlwaysThrowOnErrors;
 
     protected Method $method = Method::POST;
 
     /**
-     * @param  array<string, mixed>  $properties
+     * @param  array<string, mixed>  $properties  DP @-prefixed param keys (matching_id, flag, optional flag_date)
      */
     public function __construct(protected array $properties) {}
 
@@ -25,18 +23,14 @@ class SaveDonor extends Request implements HasBody
         return '/xmlrequest.asp';
     }
 
+    /**
+     * @return array<string, string>
+     */
     protected function defaultQuery(): array
     {
         return [
-            'action' => 'dp_savedonor',
+            'action' => 'dp_saveflag_xml',
             'params' => ActionParams::serialize($this->properties),
-        ];
-    }
-
-    protected function defaultHeaders(): array
-    {
-        return [
-            'Content-Type' => 'application/x-www-form-urlencoded',
         ];
     }
 }

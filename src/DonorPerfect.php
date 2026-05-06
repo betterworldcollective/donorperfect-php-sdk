@@ -7,6 +7,10 @@ use DonorPerfect\Requests\CallSqlRequest;
 use DonorPerfect\Requests\Donor\SaveDonor;
 use DonorPerfect\Requests\Gift\SaveGift;
 use DonorPerfect\Requests\TestConnection;
+use DonorPerfect\Resources\CodeResource;
+use DonorPerfect\Resources\FlagResource;
+use DonorPerfect\Resources\MetadataResource;
+use DonorPerfect\Resources\UdfResource;
 use DonorPerfect\Responses\DonorPerfectResponse;
 use Exception;
 use Saloon\Contracts\Authenticator;
@@ -126,6 +130,38 @@ class DonorPerfect extends Connector
         } catch (Exception $e) {
             return false;
         }
+    }
+
+    /**
+     * Read dpcodes rows for a given field_name (CAMPAIGN, GL_CODE, etc.).
+     */
+    public function codes(): CodeResource
+    {
+        return new CodeResource($this);
+    }
+
+    /**
+     * Write a UDF value to a donor or gift via dp_save_udf_xml.
+     */
+    public function udfs(): UdfResource
+    {
+        return new UdfResource($this);
+    }
+
+    /**
+     * Apply a flag to a donor via dp_saveflag_xml (additive only).
+     */
+    public function flags(): FlagResource
+    {
+        return new FlagResource($this);
+    }
+
+    /**
+     * Read DPFIELDS metadata describing the org's UDF definitions.
+     */
+    public function metadata(): MetadataResource
+    {
+        return new MetadataResource($this);
     }
 
     /**
