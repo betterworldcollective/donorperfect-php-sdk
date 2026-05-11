@@ -3,6 +3,7 @@
 namespace DonorPerfect\Resources;
 
 use DonorPerfect\DonorPerfect;
+use DonorPerfect\Exceptions\DonorPerfectException;
 use DonorPerfect\Exceptions\InvalidDataException;
 use DonorPerfect\Requests\Udf\SaveUdf;
 use Saloon\Http\BaseResource;
@@ -20,6 +21,7 @@ class UdfResource extends BaseResource
      * @return array<string, mixed>
      *
      * @throws InvalidDataException when $dataType is not one of C/D/M/N
+     * @throws DonorPerfectException when DP returns an empty or malformed response
      */
     public function save(int $matchingId, string $fieldName, string $dataType, ?string $value): array
     {
@@ -36,6 +38,10 @@ class UdfResource extends BaseResource
             'data_type' => $dataType,
             'field_value' => $value,
         ]));
+
+        if ($response->xml() === false) {
+            throw new DonorPerfectException('DonorPerfect rejected SaveUdf: '.$response->body());
+        }
 
         return $response->xmlArray();
     }

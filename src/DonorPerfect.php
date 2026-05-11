@@ -3,6 +3,7 @@
 namespace DonorPerfect;
 
 use DonorPerfect\Authentications\DonorPerfectToken;
+use DonorPerfect\Exceptions\DonorPerfectException;
 use DonorPerfect\Requests\CallSqlRequest;
 use DonorPerfect\Requests\Donor\SaveDonor;
 use DonorPerfect\Requests\Gift\SaveGift;
@@ -13,6 +14,8 @@ use DonorPerfect\Resources\MetadataResource;
 use DonorPerfect\Resources\UdfResource;
 use DonorPerfect\Responses\DonorPerfectResponse;
 use Exception;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use Saloon\Contracts\Authenticator;
 use Saloon\Http\Connector;
 use Saloon\Http\Response;
@@ -51,6 +54,11 @@ class DonorPerfect extends Connector
     public string $apiKey;
 
     /**
+     * Logger used to surface non-throwing failures (e.g. testConnection).
+     */
+    private LoggerInterface $logger;
+
+    /**
      * Define the custom response
      *
      * @var class-string<Response>|null
@@ -60,10 +68,16 @@ class DonorPerfect extends Connector
     /**
      * Constructor
      */
-    public function __construct(string $apiKey)
+    public function __construct(string $apiKey, ?LoggerInterface $logger = null)
     {
         // URL decode the API key to prevent double-encoding when used as query parameter
         $this->apiKey = urldecode($apiKey);
+        $this->logger = $logger ?? new NullLogger;
+    }
+
+    public function getLogger(): LoggerInterface
+    {
+        return $this->logger;
     }
 
     /**
@@ -128,6 +142,10 @@ class DonorPerfect extends Connector
 
             return true;
         } catch (Exception $e) {
+            $this->logger->error('DonorPerfect testConnection failed: '.$e->getMessage(), [
+                'exception' => $e,
+            ]);
+
             return false;
         }
     }
@@ -177,45 +195,53 @@ class DonorPerfect extends Connector
 
     /**
      * Save donor using saveDonor
-     */
-    /**
+     *
      * @param  array<string, mixed>  $data
+     *
+     * @throws DonorPerfectException when DP returns an error or malformed response
      */
     public function saveDonor(array $data): int
     {
         $request = new SaveDonor($data);
         $response = $this->send($request);
+        $body = $response->body();
         $xml = $response->xml();
-        if ($xml instanceof SimpleXMLElement && isset($xml->record)) {
-            // Extract the donor_id from the record field
-            $record = $xml->record;
-            if (isset($record->field) && isset($record->field['value'])) {
-                return (int) $record->field['value'];
-            }
+
+        if (! $xml instanceof SimpleXMLElement || ! isset($xml->record)) {
+            throw new DonorPerfectException('DonorPerfect rejected SaveDonor: '.$body);
         }
 
-        return 0;
+        $record = $xml->record;
+        if (! isset($record->field) || ! isset($record->field['value'])) {
+            throw new DonorPerfectException('DonorPerfect SaveDonor returned unexpected response: '.$body);
+        }
+
+        return (int) $record->field['value'];
     }
 
     /**
      * Save gift using saveGift
-     */
-    /**
+     *
      * @param  array<string, mixed>  $data
+     *
+     * @throws DonorPerfectException when DP returns an error or malformed response
      */
     public function saveGift(array $data): int
     {
         $request = new SaveGift($data);
         $response = $this->send($request);
+        $body = $response->body();
         $xml = $response->xml();
-        if ($xml instanceof SimpleXMLElement && isset($xml->record)) {
-            // Extract the gift_id from the record field
-            $record = $xml->record;
-            if (isset($record->field) && isset($record->field['value'])) {
-                return (int) $record->field['value'];
-            }
+
+        if (! $xml instanceof SimpleXMLElement || ! isset($xml->record)) {
+            throw new DonorPerfectException('DonorPerfect rejected SaveGift: '.$body);
         }
 
-        return 0;
+        $record = $xml->record;
+        if (! isset($record->field) || ! isset($record->field['value'])) {
+            throw new DonorPerfectException('DonorPerfect SaveGift returned unexpected response: '.$body);
+        }
+
+        return (int) $record->field['value'];
     }
 }

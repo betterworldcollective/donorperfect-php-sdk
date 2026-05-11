@@ -16,11 +16,22 @@ class DonorPerfectResponse extends Response
             return false;
         }
 
-        return simplexml_load_string($body);
+        // libxml emits PHP warnings on malformed XML by default. Surface the failure
+        // via the bool return value instead so callers (and tests) stay clean.
+        $previous = libxml_use_internal_errors(true);
+        try {
+            $xml = simplexml_load_string($body);
+        } finally {
+            libxml_clear_errors();
+            libxml_use_internal_errors($previous);
+        }
+
+        return $xml;
     }
 
     /**
      * Get the response as array from XML
+     *
      * @return array<string, mixed>
      */
     public function xmlArray(): array
@@ -36,7 +47,7 @@ class DonorPerfectResponse extends Response
         }
 
         $result = json_decode($jsonString, true);
-        if (!is_array($result)) {
+        if (! is_array($result)) {
             return [];
         }
 
