@@ -1,6 +1,7 @@
 <?php
 
 use DonorPerfect\DonorPerfect;
+use DonorPerfect\Exceptions\DonorPerfectException;
 use DonorPerfect\Requests\Flag\SaveFlag;
 use DonorPerfect\Resources\FlagResource;
 use Saloon\Http\Faking\MockClient;
@@ -49,4 +50,31 @@ it('omits @flag_date when none is provided so DP defaults to today', function ()
     $mockClient->assertSent(function (SaveFlag $request): bool {
         return ! str_contains($request->query()->get('params'), '@flag_date');
     });
+});
+
+it('throws DonorPerfectException when DP returns an empty body', function () {
+    $mockClient = new MockClient([
+        SaveFlag::class => MockResponse::make(''),
+    ]);
+    $connector = (new DonorPerfect('k'))->withMockClient($mockClient);
+
+    $connector->flags()->save(1, 'WEB');
+})->throws(DonorPerfectException::class, 'DonorPerfect rejected SaveFlag');
+
+it('throws DonorPerfectException when DP returns malformed XML', function () {
+    $mockClient = new MockClient([
+        SaveFlag::class => MockResponse::make('not xml at all'),
+    ]);
+    $connector = (new DonorPerfect('k'))->withMockClient($mockClient);
+
+    $connector->flags()->save(1, 'WEB');
+})->throws(DonorPerfectException::class, 'DonorPerfect rejected SaveFlag');
+
+it('returns the parsed array on a valid response', function () {
+    $mockClient = new MockClient([
+        SaveFlag::class => MockResponse::make('<?xml version="1.0"?><result><record><field name="success" value="true"/></record></result>'),
+    ]);
+    $connector = (new DonorPerfect('k'))->withMockClient($mockClient);
+
+    expect($connector->flags()->save(1, 'WEB'))->toBeArray();
 });

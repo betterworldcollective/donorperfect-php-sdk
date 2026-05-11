@@ -4,6 +4,7 @@ namespace DonorPerfect\Resources;
 
 use DateTimeInterface;
 use DonorPerfect\DonorPerfect;
+use DonorPerfect\Exceptions\DonorPerfectException;
 use DonorPerfect\Requests\Flag\SaveFlag;
 use Saloon\Http\BaseResource;
 
@@ -17,6 +18,8 @@ class FlagResource extends BaseResource
      * exposed by this SDK to prevent accidental data loss in sync listeners.
      *
      * @return array<string, mixed>
+     *
+     * @throws DonorPerfectException when DP returns an empty or malformed response
      */
     public function save(int $donorId, string $flagCode, ?DateTimeInterface $flagDate = null): array
     {
@@ -33,6 +36,10 @@ class FlagResource extends BaseResource
         }
 
         $response = $connector->send(new SaveFlag($properties));
+
+        if ($response->xml() === false) {
+            throw new DonorPerfectException('DonorPerfect rejected SaveFlag: '.$response->body());
+        }
 
         return $response->xmlArray();
     }

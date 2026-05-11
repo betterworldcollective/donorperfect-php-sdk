@@ -1,6 +1,7 @@
 <?php
 
 use DonorPerfect\DonorPerfect;
+use DonorPerfect\Exceptions\DonorPerfectException;
 use DonorPerfect\Exceptions\InvalidDataException;
 use DonorPerfect\Requests\Udf\SaveUdf;
 use DonorPerfect\Resources\UdfResource;
@@ -34,3 +35,30 @@ it('builds a dp_save_udf_xml call with @matching_id, @field_name, @data_type, @f
 it('throws InvalidDataException for an unsupported data_type', function () {
     (new DonorPerfect('k'))->udfs()->save(1, 'F', 'X', 'v');
 })->throws(InvalidDataException::class);
+
+it('throws DonorPerfectException when DP returns an empty body', function () {
+    $mockClient = new MockClient([
+        SaveUdf::class => MockResponse::make(''),
+    ]);
+    $connector = (new DonorPerfect('k'))->withMockClient($mockClient);
+
+    $connector->udfs()->save(1, 'PRONOUN_UDF', 'C', 'they/them');
+})->throws(DonorPerfectException::class, 'DonorPerfect rejected SaveUdf');
+
+it('throws DonorPerfectException when DP returns malformed XML', function () {
+    $mockClient = new MockClient([
+        SaveUdf::class => MockResponse::make('not xml at all'),
+    ]);
+    $connector = (new DonorPerfect('k'))->withMockClient($mockClient);
+
+    $connector->udfs()->save(1, 'PRONOUN_UDF', 'C', 'they/them');
+})->throws(DonorPerfectException::class, 'DonorPerfect rejected SaveUdf');
+
+it('returns the parsed array on a valid response', function () {
+    $mockClient = new MockClient([
+        SaveUdf::class => MockResponse::make('<?xml version="1.0"?><result><record><field name="success" value="true"/></record></result>'),
+    ]);
+    $connector = (new DonorPerfect('k'))->withMockClient($mockClient);
+
+    expect($connector->udfs()->save(1, 'PRONOUN_UDF', 'C', 'they/them'))->toBeArray();
+});
