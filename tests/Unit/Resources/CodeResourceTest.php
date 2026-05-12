@@ -77,3 +77,36 @@ it('throws InvalidDataException for an unknown field_name', function () {
 
     $connector->codes()->list("CAMPAIGN'; DROP TABLE dpcodes; --");
 })->throws(InvalidDataException::class);
+
+it('accepts FLAGS as a valid field_name and queries dpcodes', function () {
+    $mockClient = new MockClient([
+        CallSqlRequest::class => MockResponse::make(
+            <<<'XML'
+            <?xml version="1.0" encoding="UTF-8"?>
+            <result>
+                <record>
+                    <field name="CODE" value="WEB"/>
+                    <field name="DESCRIPTION" value="Online donor"/>
+                    <field name="INACTIVE" value="0"/>
+                </record>
+            </result>
+            XML
+        ),
+    ]);
+
+    $connector = new DonorPerfect('test-api-key');
+    $connector->withMockClient($mockClient);
+
+    $rows = $connector->codes()->list('FLAGS');
+
+    $mockClient->assertSent(function (CallSqlRequest $request): bool {
+        return $request->resolveEndpoint() === '/xmlrequest.asp';
+    });
+
+    expect($rows)->toHaveCount(1)
+        ->and($rows[0])->toMatchArray([
+            'code' => 'WEB',
+            'description' => 'Online donor',
+            'inactive' => false,
+        ]);
+});
