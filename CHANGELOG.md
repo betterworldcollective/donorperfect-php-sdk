@@ -2,6 +2,16 @@
 
 All notable changes to `betterworldcollective/donorperfect-php-sdk` will be documented in this file.
 
+## [0.3.3] — 2026-05-12
+
+### Added
+
+- `'FLAGS'` added to `Resources\CodeResource::ALLOWED_FIELD_NAMES`. Callers can now run `$client->codes()->list('FLAGS')` to fetch the org's `dpcodes` rows where `FIELD_NAME='FLAGS'`. Previously rejected with `InvalidDataException`. Enables the donor-flags dropdown in BetterWorld's DP integration dashboard.
+
+### Backward compatibility
+
+Purely additive — no existing call site changes behavior. The allowlist only grows.
+
 ## [0.3.2] — 2026-05-11
 
 ### Changed — silent failures now throw
