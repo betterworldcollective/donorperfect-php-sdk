@@ -76,7 +76,7 @@ class CodeResource extends BaseResource
                     $row['description'] = $value === '' ? null : $value;
                     break;
                 case 'INACTIVE':
-                    $row['inactive'] = $value === '1' || strcasecmp($value, 'true') === 0;
+                    $row['inactive'] = $value === '1' || $value == 'Y' || strcasecmp($value, 'true') === 0;
                     break;
             }
         }
