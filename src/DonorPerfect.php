@@ -10,7 +10,7 @@ use DonorPerfect\Requests\Gift\SaveGift;
 use DonorPerfect\Requests\TestConnection;
 use DonorPerfect\Resources\CodeResource;
 use DonorPerfect\Resources\FlagResource;
-use DonorPerfect\Resources\MetadataResource;
+use DonorPerfect\Resources\UdfMetadataResource;
 use DonorPerfect\Resources\UdfResource;
 use DonorPerfect\Responses\DonorPerfectResponse;
 use Exception;
@@ -175,11 +175,15 @@ class DonorPerfect extends Connector
     }
 
     /**
-     * Read DPFIELDS metadata describing the org's UDF definitions.
+     * List the org's user-defined fields (UDFs) for a given UDF table (DPUDF or DPGIFTUDF).
+     *
+     * Replaces the misnamed `metadata()` accessor (removed in 0.3.4): the previous
+     * implementation queried `DPFIELDS` which only contains built-in field metadata,
+     * never UDFs. UDFs live as columns on `DPUDF`/`DPGIFTUDF` themselves.
      */
-    public function metadata(): MetadataResource
+    public function udfMetadata(): UdfMetadataResource
     {
-        return new MetadataResource($this);
+        return new UdfMetadataResource($this);
     }
 
     /**

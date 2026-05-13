@@ -36,9 +36,24 @@ it('throws InvalidDataException for an unsupported data_type', function () {
     (new DonorPerfect('k'))->udfs()->save(1, 'F', 'X', 'v');
 })->throws(InvalidDataException::class);
 
+it('rejects the legacy M (money) data_type — money UDFs route through N per dp_save_udf_xml', function () {
+    (new DonorPerfect('k'))->udfs()->save(1, 'AMOUNT_UDF', 'M', '100.00');
+})->throws(InvalidDataException::class);
+
 it('throws DonorPerfectException when DP returns an empty body', function () {
     $mockClient = new MockClient([
         SaveUdf::class => MockResponse::make(''),
+    ]);
+    $connector = (new DonorPerfect('k'))->withMockClient($mockClient);
+
+    $connector->udfs()->save(1, 'PRONOUN_UDF', 'C', 'they/them');
+})->throws(DonorPerfectException::class, 'DonorPerfect rejected SaveUdf');
+
+it('throws DonorPerfectException when DP returns a success=false rejection (no <record>)', function () {
+    $mockClient = new MockClient([
+        SaveUdf::class => MockResponse::make(
+            '<?xml version="1.0"?><result><field name="success" value="false" reason="user not authorized for this api call."/></result>'
+        ),
     ]);
     $connector = (new DonorPerfect('k'))->withMockClient($mockClient);
 
