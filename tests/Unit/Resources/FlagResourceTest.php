@@ -28,7 +28,7 @@ it('builds a dp_saveflag_xml call with @matching_id and @flag', function () {
 
 it('passes @flag_date when one is provided', function () {
     $mockClient = new MockClient([
-        SaveFlag::class => MockResponse::make('<?xml version="1.0"?><result/>'),
+        SaveFlag::class => MockResponse::make('<?xml version="1.0"?><result><record><field name="success" value="true"/></record></result>'),
     ]);
     $connector = (new DonorPerfect('k'))->withMockClient($mockClient);
 
@@ -41,7 +41,7 @@ it('passes @flag_date when one is provided', function () {
 
 it('omits @flag_date when none is provided so DP defaults to today', function () {
     $mockClient = new MockClient([
-        SaveFlag::class => MockResponse::make('<?xml version="1.0"?><result/>'),
+        SaveFlag::class => MockResponse::make('<?xml version="1.0"?><result><record><field name="success" value="true"/></record></result>'),
     ]);
     $connector = (new DonorPerfect('k'))->withMockClient($mockClient);
 
@@ -55,6 +55,17 @@ it('omits @flag_date when none is provided so DP defaults to today', function ()
 it('throws DonorPerfectException when DP returns an empty body', function () {
     $mockClient = new MockClient([
         SaveFlag::class => MockResponse::make(''),
+    ]);
+    $connector = (new DonorPerfect('k'))->withMockClient($mockClient);
+
+    $connector->flags()->save(1, 'WEB');
+})->throws(DonorPerfectException::class, 'DonorPerfect rejected SaveFlag');
+
+it('throws DonorPerfectException when DP returns a success=false rejection (no <record>)', function () {
+    $mockClient = new MockClient([
+        SaveFlag::class => MockResponse::make(
+            '<?xml version="1.0"?><result><field name="success" value="false" reason="user not authorized for this api call."/></result>'
+        ),
     ]);
     $connector = (new DonorPerfect('k'))->withMockClient($mockClient);
 

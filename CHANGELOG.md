@@ -2,6 +2,41 @@
 
 All notable changes to `betterworldcollective/donorperfect-php-sdk` will be documented in this file.
 
+## [0.3.4] — 2026-05-13
+
+### Changed — UDF metadata now queries the right table
+
+`MetadataResource` (the old `metadata()` accessor) was queried `DPFIELDS WHERE TABLE_NAME IN ('DP','DPGIFT')` — but `DPFIELDS` only contains metadata for built-in DonorPerfect fields. UDFs live as columns on `DPUDF`/`DPGIFTUDF` themselves. Anyone using the old API to populate a "map to your UDFs" dropdown would have surfaced 70+ built-in fields like `AMOUNT` and `ADDRESS` — destructive if mapped.
+
+**`MetadataResource` is replaced with `UdfMetadataResource`**, which queries `INFORMATION_SCHEMA.COLUMNS` against the actual UDF tables and maps SQL types to the C/D/N codes `dp_save_udf_xml` accepts (`varchar/nvarchar/char` → `C`, `numeric/money/int` → `N`, `datetime/date` → `D`).
+
+```php
+// Before (returned 70+ built-in fields, NOT UDFs):
+$client->metadata()->list(['DP', 'DPGIFT']);
+
+// After (returns only real UDFs with correct types):
+$client->udfMetadata()->list('DPUDF');     // donor UDFs
+$client->udfMetadata()->list('DPGIFTUDF'); // gift UDFs
+```
+
+### Changed — `UdfResource::ALLOWED_DATA_TYPES`
+
+Dropped `'M'` from the allowlist. Per DonorPerfect XML API docs (dp_save_udf_xml, p.39) only `C/D/N` are valid `@data_type` values — money UDFs route through `N` via the `@number_value` parameter. The old `'M'` entry was over-permissive and would have been silently rejected by DP at the wire if anyone passed it.
+
+### Fixed — silent failures in `UdfResource::save` and `FlagResource::save`
+
+The 0.3.2 hotfix added throw-on-rejection for `saveDonor`/`saveGift` (checking for `<record>` element) but missed `UdfResource::save` and `FlagResource::save` — they only checked for empty body. DP's permission rejections come back as `<result><field name="success" value="false" reason="…"/></result>` (valid XML, no `<record>`), so both methods were silently returning the failure response.
+
+Both now throw `DonorPerfectException` with the raw DP body when the response is missing `<record>`. Mirrors the v0.3.2 saveDonor pattern.
+
+### Backward compatibility
+
+**Breaking: `metadata()` accessor renamed to `udfMetadata()`.** Old call sites must update. The signature also changed from `list(array $tableNames = ['DP','DPGIFT'])` to `list(string $tableName)` — single table, allowed values `DPUDF` / `DPGIFTUDF`. Return shape changed to `[{field_name, data_type}]` — no longer includes `table_name` (input) or `prompt` (`INFORMATION_SCHEMA` doesn't have prompts).
+
+**Breaking: `UdfResource::save` rejects `'M'`.** Any caller passing `'M'` (none on Packagist) needs to switch to `'N'` for money UDFs.
+
+**Behavior change: `UdfResource::save` and `FlagResource::save` now throw on DP permission rejections.** Same shape as the v0.3.2 hotfix for saveDonor/saveGift; `bw-api`'s `DonorPerfectDriver::create()` already wraps SDK calls in `catch (Exception)` → `CRMException`, so existing consumers handle this transparently.
+
 ## [0.3.3] — 2026-05-12
 
 ### Added

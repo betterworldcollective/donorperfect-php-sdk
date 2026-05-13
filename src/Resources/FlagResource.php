@@ -7,6 +7,7 @@ use DonorPerfect\DonorPerfect;
 use DonorPerfect\Exceptions\DonorPerfectException;
 use DonorPerfect\Requests\Flag\SaveFlag;
 use Saloon\Http\BaseResource;
+use SimpleXMLElement;
 
 class FlagResource extends BaseResource
 {
@@ -37,8 +38,14 @@ class FlagResource extends BaseResource
 
         $response = $connector->send(new SaveFlag($properties));
 
-        if ($response->xml() === false) {
-            throw new DonorPerfectException('DonorPerfect rejected SaveFlag: '.$response->body());
+        $body = $response->body();
+        $xml = $response->xml();
+
+        // dp_saveflag_xml success returns <result><record>…</record></result>.
+        // DP rejections (e.g. permissions) come back as <result><field name="success" value="false" reason="…"/></result>
+        // — same wrapper, no <record>. Treat any response missing <record> as a rejection.
+        if (! $xml instanceof SimpleXMLElement || ! isset($xml->record)) {
+            throw new DonorPerfectException('DonorPerfect rejected SaveFlag: '.$body);
         }
 
         return $response->xmlArray();
