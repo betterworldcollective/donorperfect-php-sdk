@@ -30,7 +30,16 @@ it('returns an empty string for an empty property bag', function () {
     expect(ActionParams::serialize([]))->toBe('');
 });
 
-it('treats numeric strings as numeric (DP backwards-compat)', function () {
+it('quotes numeric-looking strings (e.g. phone "+84907921399", zip "12345")', function () {
+    // Real numeric PHP types stay bare; numeric-looking strings get quoted.
+    // is_numeric() returns true for "+84907921399" and would let it slip
+    // through unquoted, which DP's parser rejects with "user not authorized".
+    expect(ActionParams::serialize(['phone' => '+84907921399']))
+        ->toBe("@phone='+84907921399'");
+
+    expect(ActionParams::serialize(['zip' => '12345']))
+        ->toBe("@zip='12345'");
+
     expect(ActionParams::serialize(['amount' => '100.50']))
-        ->toBe('@amount=100.50');
+        ->toBe("@amount='100.50'");
 });

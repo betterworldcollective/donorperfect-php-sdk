@@ -17,6 +17,7 @@ class CodeResource extends BaseResource
         'EMAIL_TYPE',
         'PHONE_TYPE',
         'ADDRESS_TYPE',
+        'FLAG',
         'FLAGS',
     ];
 

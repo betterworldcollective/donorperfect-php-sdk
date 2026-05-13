@@ -11,44 +11,21 @@ it('exposes a flags() accessor on the connector', function () {
     expect((new DonorPerfect('k'))->flags())->toBeInstanceOf(FlagResource::class);
 });
 
-it('builds a dp_saveflag_xml call with @matching_id and @flag', function () {
+it('builds dp_saveflag_xml with @donor_id, @flag, @user_id (per DP docs p.48)', function () {
     $mockClient = new MockClient([
         SaveFlag::class => MockResponse::make('<?xml version="1.0"?><result><record><field name="success" value="true"/></record></result>'),
     ]);
     $connector = (new DonorPerfect('k'))->withMockClient($mockClient);
 
-    $connector->flags()->save(donorId: 9876, flagCode: 'WEB');
+    $connector->flags()->save(donorId: 9876, flagCode: 'WEB', userId: 'BetterWorld');
 
     $mockClient->assertSent(function (SaveFlag $request): bool {
+        $params = $request->query()->get('params');
+
         return $request->query()->get('action') === 'dp_saveflag_xml'
-            && str_contains($request->query()->get('params'), '@matching_id=9876')
-            && str_contains($request->query()->get('params'), "@flag='WEB'");
-    });
-});
-
-it('passes @flag_date when one is provided', function () {
-    $mockClient = new MockClient([
-        SaveFlag::class => MockResponse::make('<?xml version="1.0"?><result><record><field name="success" value="true"/></record></result>'),
-    ]);
-    $connector = (new DonorPerfect('k'))->withMockClient($mockClient);
-
-    $connector->flags()->save(1, 'WEB', new DateTimeImmutable('2026-05-05'));
-
-    $mockClient->assertSent(function (SaveFlag $request): bool {
-        return str_contains($request->query()->get('params'), "@flag_date='2026-05-05'");
-    });
-});
-
-it('omits @flag_date when none is provided so DP defaults to today', function () {
-    $mockClient = new MockClient([
-        SaveFlag::class => MockResponse::make('<?xml version="1.0"?><result><record><field name="success" value="true"/></record></result>'),
-    ]);
-    $connector = (new DonorPerfect('k'))->withMockClient($mockClient);
-
-    $connector->flags()->save(1, 'WEB');
-
-    $mockClient->assertSent(function (SaveFlag $request): bool {
-        return ! str_contains($request->query()->get('params'), '@flag_date');
+            && str_contains($params, '@donor_id=9876')
+            && str_contains($params, "@flag='WEB'")
+            && str_contains($params, "@user_id='BetterWorld'");
     });
 });
 
@@ -58,7 +35,7 @@ it('throws DonorPerfectException when DP returns an empty body', function () {
     ]);
     $connector = (new DonorPerfect('k'))->withMockClient($mockClient);
 
-    $connector->flags()->save(1, 'WEB');
+    $connector->flags()->save(1, 'WEB', 'BetterWorld');
 })->throws(DonorPerfectException::class, 'DonorPerfect rejected SaveFlag');
 
 it('throws DonorPerfectException when DP returns a success=false rejection (no <record>)', function () {
@@ -69,7 +46,7 @@ it('throws DonorPerfectException when DP returns a success=false rejection (no <
     ]);
     $connector = (new DonorPerfect('k'))->withMockClient($mockClient);
 
-    $connector->flags()->save(1, 'WEB');
+    $connector->flags()->save(1, 'WEB', 'BetterWorld');
 })->throws(DonorPerfectException::class, 'DonorPerfect rejected SaveFlag');
 
 it('throws DonorPerfectException when DP returns malformed XML', function () {
@@ -78,7 +55,7 @@ it('throws DonorPerfectException when DP returns malformed XML', function () {
     ]);
     $connector = (new DonorPerfect('k'))->withMockClient($mockClient);
 
-    $connector->flags()->save(1, 'WEB');
+    $connector->flags()->save(1, 'WEB', 'BetterWorld');
 })->throws(DonorPerfectException::class, 'DonorPerfect rejected SaveFlag');
 
 it('returns the parsed array on a valid response', function () {
@@ -87,5 +64,5 @@ it('returns the parsed array on a valid response', function () {
     ]);
     $connector = (new DonorPerfect('k'))->withMockClient($mockClient);
 
-    expect($connector->flags()->save(1, 'WEB'))->toBeArray();
+    expect($connector->flags()->save(1, 'WEB', 'BetterWorld'))->toBeArray();
 });

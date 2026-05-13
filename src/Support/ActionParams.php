@@ -5,9 +5,10 @@ namespace DonorPerfect\Support;
 /**
  * Serializes a property bag into DP's `@key=value` action-param format.
  *
- * Used by every request class that calls a `dp_*_xml` action endpoint
- * (SaveDonor, SaveGift, SaveUdf, SaveFlag). DP expects strings to be
- * single-quoted, numerics bare, and nulls as the bare token `null`.
+ * DP expects single-quoted strings, bare ints/floats, and the bare token `null`.
+ * Numeric-looking strings (phone like '+84907921399', zip '12345') get quoted
+ * — `is_numeric()` returns true for them and would let them slip through unquoted,
+ * which DP's parser rejects with "user not authorized for this api call".
  */
 final class ActionParams
 {
@@ -20,7 +21,7 @@ final class ActionParams
         foreach ($properties as $key => $value) {
             if ($value === null) {
                 $params[] = "@{$key}=null";
-            } elseif (is_numeric($value)) {
+            } elseif (is_int($value) || is_float($value)) {
                 $params[] = "@{$key}={$value}";
             } else {
                 $params[] = "@{$key}='{$value}'";

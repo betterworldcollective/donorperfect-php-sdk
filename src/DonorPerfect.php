@@ -187,14 +187,16 @@ class DonorPerfect extends Connector
     }
 
     /**
-     * Execute SQL query
+     * Execute a raw SQL query against DonorPerfect's `dp_callsql` endpoint.
+     * `CallSqlRequest::hasRequestFailed` detects DP's error envelope and throws.
+     *
+     * @return array<string, mixed>
+     *
+     * @throws DonorPerfectException when DP returns an error envelope
      */
-    public function executeSql(string $sql): mixed
+    public function executeSql(string $sql): array
     {
-        $request = new CallSqlRequest($sql);
-        $response = $this->send($request);
-
-        return $response->xmlArray();
+        return $this->send(new CallSqlRequest($sql))->xmlArray();
     }
 
     /**

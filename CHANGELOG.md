@@ -2,6 +2,15 @@
 
 All notable changes to `betterworldcollective/donorperfect-php-sdk` will be documented in this file.
 
+## [0.3.5] — 2026-05-13
+
+Three bug fixes that were silently turning into "user not authorized" rejections from DP.
+
+- **`ActionParams::serialize`** — quote numeric-looking strings (e.g. `'+84907921399'`, `'12345'`). `is_numeric()` returns true for them and was letting them through unquoted, which DP rejects.
+- **`FlagResource::save`** — fix the `dp_saveflag_xml` payload to match DP docs (p.48): `@donor_id` (not `@matching_id`), and `@user_id` is required. Dropped the unsupported `@flag_date` parameter.
+- **`CallSqlRequest`** — detect DP's `<field name="success" value="false"/>` envelope and throw `DonorPerfectException` with the SQL + DP's error text, instead of returning a confusing pseudo-success array.
+- **`CodeResource`** — accept `'FLAG'` (the real `dpcodes.field_name` value, singular) alongside `'FLAGS'`.
+
 ## [0.3.4] — 2026-05-13
 
 ### Changed — UDF metadata now queries the right table
