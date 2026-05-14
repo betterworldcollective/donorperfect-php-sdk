@@ -2,6 +2,12 @@
 
 All notable changes to `betterworldcollective/donorperfect-php-sdk` will be documented in this file.
 
+## [0.3.6] — 2026-05-14
+
+- **`UdfResource::save`** — fix the `dp_save_udf_xml` payload to match DP docs (p.39): seven required params, route value to `@char_value` / `@date_value` / `@number_value` based on `data_type`, include `@user_id`. N-type values are now coerced to bare numerics (DP silently drops quoted ones).
+- **`ActionParams::serialize`** — escape single quotes in string values by doubling them (`O'Brien` → `'O''Brien'`). DP's stored-proc parser was treating inner apostrophes as string terminators, causing "user not authorized" rejections on any donor with `'` in a name/address/note.
+- **`CodeResource`** — recognise `'Y'` as an inactive marker alongside `'1'` and `'true'` (DP's UI sets it that way). Thanks @josh-b-dev (#8).
+
 ## [0.3.5] — 2026-05-13
 
 Three bug fixes that were silently turning into "user not authorized" rejections from DP.

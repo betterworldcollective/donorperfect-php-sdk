@@ -30,6 +30,14 @@ it('returns an empty string for an empty property bag', function () {
     expect(ActionParams::serialize([]))->toBe('');
 });
 
+it("escapes single quotes by doubling them (DP's stored proc parser convention)", function () {
+    expect(ActionParams::serialize(['last_name' => "O'Brien"]))
+        ->toBe("@last_name='O''Brien'");
+
+    expect(ActionParams::serialize(['note' => "don't can't won't"]))
+        ->toBe("@note='don''t can''t won''t'");
+});
+
 it('quotes numeric-looking strings (e.g. phone "+84907921399", zip "12345")', function () {
     // Real numeric PHP types stay bare; numeric-looking strings get quoted.
     // is_numeric() returns true for "+84907921399" and would let it slip

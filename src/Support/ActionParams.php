@@ -24,7 +24,8 @@ final class ActionParams
             } elseif (is_int($value) || is_float($value)) {
                 $params[] = "@{$key}={$value}";
             } else {
-                $params[] = "@{$key}='{$value}'";
+                $escaped = str_replace("'", "''", (string) $value);
+                $params[] = "@{$key}='{$escaped}'";
             }
         }
 
