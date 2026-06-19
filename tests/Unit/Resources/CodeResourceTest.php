@@ -128,3 +128,39 @@ it('accepts FLAGS as a valid field_name and queries dpcodes', function () {
             'inactive' => false,
         ]);
 });
+
+it('accepts SOLICIT_CODE as a valid field_name (the real DP dpcodes value) and queries dpcodes', function () {
+    $mockClient = new MockClient([
+        CallSqlRequest::class => MockResponse::make(
+            '<?xml version="1.0"?><result><record><field name="CODE" value="WEB"/><field name="DESCRIPTION" value="Web"/><field name="INACTIVE" value="0"/></record></result>'
+        ),
+    ]);
+
+    $connector = (new DonorPerfect('test-api-key'))->withMockClient($mockClient);
+
+    $rows = $connector->codes()->list('SOLICIT_CODE');
+
+    $mockClient->assertSent(function (CallSqlRequest $request): bool {
+        return str_contains($request->query()->get('action'), "FIELD_NAME = 'SOLICIT_CODE'");
+    });
+
+    expect($rows)->toHaveCount(1)->and($rows[0]['code'])->toBe('WEB');
+});
+
+it('accepts SUB_SOLICIT_CODE as a valid field_name and queries dpcodes', function () {
+    $mockClient = new MockClient([
+        CallSqlRequest::class => MockResponse::make(
+            '<?xml version="1.0"?><result><record><field name="CODE" value="GOLF" /><field name="DESCRIPTION" value="Golf Tournament"/><field name="INACTIVE" value="0"/></record></result>'
+        ),
+    ]);
+
+    $connector = (new DonorPerfect('test-api-key'))->withMockClient($mockClient);
+
+    $rows = $connector->codes()->list('SUB_SOLICIT_CODE');
+
+    $mockClient->assertSent(function (CallSqlRequest $request): bool {
+        return str_contains($request->query()->get('action'), "FIELD_NAME = 'SUB_SOLICIT_CODE'");
+    });
+
+    expect($rows)->toHaveCount(1)->and($rows[0]['code'])->toBe('GOLF');
+});

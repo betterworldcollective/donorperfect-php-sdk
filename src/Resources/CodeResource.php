@@ -13,7 +13,8 @@ class CodeResource extends BaseResource
     private const ALLOWED_FIELD_NAMES = [
         'CAMPAIGN',
         'GL_CODE',
-        'SOLICIT',
+        'SOLICIT_CODE',
+        'SUB_SOLICIT_CODE',
         'EMAIL_TYPE',
         'PHONE_TYPE',
         'ADDRESS_TYPE',
