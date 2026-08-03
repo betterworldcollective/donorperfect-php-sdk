@@ -13,7 +13,7 @@ it('exposes a flags() accessor on the connector', function () {
 
 it('builds dp_saveflag_xml with @donor_id, @flag, @user_id (per DP docs p.48)', function () {
     $mockClient = new MockClient([
-        SaveFlag::class => MockResponse::make('<?xml version="1.0"?><result><record><field name="success" value="true"/></record></result>'),
+        SaveFlag::class => MockResponse::make('<?xml version="1.0"?><result><record><field name="" id="" value="640"/></record></result>'),
     ]);
     $connector = (new DonorPerfect('k'))->withMockClient($mockClient);
 
@@ -36,7 +36,7 @@ it('throws DonorPerfectException when DP returns an empty body', function () {
     $connector = (new DonorPerfect('k'))->withMockClient($mockClient);
 
     $connector->flags()->save(1, 'WEB', 'BetterWorld');
-})->throws(DonorPerfectException::class, 'DonorPerfect rejected SaveFlag');
+})->throws(DonorPerfectException::class, 'dp_saveflag_xml');
 
 it('throws DonorPerfectException when DP returns a success=false rejection (no <record>)', function () {
     $mockClient = new MockClient([
@@ -47,7 +47,7 @@ it('throws DonorPerfectException when DP returns a success=false rejection (no <
     $connector = (new DonorPerfect('k'))->withMockClient($mockClient);
 
     $connector->flags()->save(1, 'WEB', 'BetterWorld');
-})->throws(DonorPerfectException::class, 'DonorPerfect rejected SaveFlag');
+})->throws(DonorPerfectException::class, 'dp_saveflag_xml');
 
 it('throws DonorPerfectException when DP returns malformed XML', function () {
     $mockClient = new MockClient([
@@ -56,11 +56,11 @@ it('throws DonorPerfectException when DP returns malformed XML', function () {
     $connector = (new DonorPerfect('k'))->withMockClient($mockClient);
 
     $connector->flags()->save(1, 'WEB', 'BetterWorld');
-})->throws(DonorPerfectException::class, 'DonorPerfect rejected SaveFlag');
+})->throws(DonorPerfectException::class, 'dp_saveflag_xml');
 
 it('returns the parsed array on a valid response', function () {
     $mockClient = new MockClient([
-        SaveFlag::class => MockResponse::make('<?xml version="1.0"?><result><record><field name="success" value="true"/></record></result>'),
+        SaveFlag::class => MockResponse::make('<?xml version="1.0"?><result><record><field name="" id="" value="640"/></record></result>'),
     ]);
     $connector = (new DonorPerfect('k'))->withMockClient($mockClient);
 

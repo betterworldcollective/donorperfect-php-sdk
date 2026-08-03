@@ -19,7 +19,6 @@ use Psr\Log\NullLogger;
 use Saloon\Contracts\Authenticator;
 use Saloon\Http\Connector;
 use Saloon\Http\Response;
-use SimpleXMLElement;
 
 class DonorPerfect extends Connector
 {
@@ -208,21 +207,9 @@ class DonorPerfect extends Connector
      */
     public function saveDonor(array $data): int
     {
-        $request = new SaveDonor($data);
-        $response = $this->send($request);
-        $body = $response->body();
-        $xml = $response->xml();
-
-        if (! $xml instanceof SimpleXMLElement || ! isset($xml->record)) {
-            throw new DonorPerfectException('DonorPerfect rejected SaveDonor: '.$body);
-        }
-
-        $record = $xml->record;
-        if (! isset($record->field) || ! isset($record->field['value'])) {
-            throw new DonorPerfectException('DonorPerfect SaveDonor returned unexpected response: '.$body);
-        }
-
-        return (int) $record->field['value'];
+        // SaveDonor::hasRequestFailed() has already rejected every non-numeric id,
+        // so the cast can no longer silently produce 0.
+        return (int) $this->send(new SaveDonor($data))->xml()->record->field['value'];
     }
 
     /**
@@ -234,20 +221,7 @@ class DonorPerfect extends Connector
      */
     public function saveGift(array $data): int
     {
-        $request = new SaveGift($data);
-        $response = $this->send($request);
-        $body = $response->body();
-        $xml = $response->xml();
-
-        if (! $xml instanceof SimpleXMLElement || ! isset($xml->record)) {
-            throw new DonorPerfectException('DonorPerfect rejected SaveGift: '.$body);
-        }
-
-        $record = $xml->record;
-        if (! isset($record->field) || ! isset($record->field['value'])) {
-            throw new DonorPerfectException('DonorPerfect SaveGift returned unexpected response: '.$body);
-        }
-
-        return (int) $record->field['value'];
+        // See saveDonor() — failure detection lives in SaveGift::hasRequestFailed().
+        return (int) $this->send(new SaveGift($data))->xml()->record->field['value'];
     }
 }

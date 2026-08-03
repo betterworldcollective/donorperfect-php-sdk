@@ -24,7 +24,7 @@ it('throws DonorPerfectException when the response body is empty', function () {
     $connector = (new DonorPerfect('k'))->withMockClient($mockClient);
 
     $connector->saveDonor(['first_name' => 'Test']);
-})->throws(DonorPerfectException::class, 'DonorPerfect rejected SaveDonor');
+})->throws(DonorPerfectException::class, 'dp_savedonor');
 
 it('throws DonorPerfectException when DP returns an error body without a <record>', function () {
     $mockClient = new MockClient([
@@ -35,7 +35,7 @@ it('throws DonorPerfectException when DP returns an error body without a <record
     $connector = (new DonorPerfect('k'))->withMockClient($mockClient);
 
     $connector->saveDonor(['first_name' => 'Test']);
-})->throws(DonorPerfectException::class, 'DonorPerfect rejected SaveDonor');
+})->throws(DonorPerfectException::class, 'dp_savedonor');
 
 it('throws DonorPerfectException when <record> exists but the value attribute is missing', function () {
     $mockClient = new MockClient([
@@ -46,4 +46,4 @@ it('throws DonorPerfectException when <record> exists but the value attribute is
     $connector = (new DonorPerfect('k'))->withMockClient($mockClient);
 
     $connector->saveDonor(['first_name' => 'Test']);
-})->throws(DonorPerfectException::class, 'unexpected response');
+})->throws(DonorPerfectException::class, 'dp_savedonor');

@@ -43,7 +43,7 @@ it('builds a dpcodes SELECT for a valid field_name and hits /xmlrequest.asp', fu
         $sql = $request->query()->get('action');
 
         return $request->resolveEndpoint() === '/xmlrequest.asp'
-            && $sql === "SELECT CODE, DESCRIPTION, INACTIVE FROM dpcodes WHERE FIELD_NAME = 'CAMPAIGN'";
+            && $sql === "SELECT TOP 500 CODE, DESCRIPTION, INACTIVE FROM dpcodes WHERE FIELD_NAME = 'CAMPAIGN' ORDER BY CODE";
     });
 
     expect($rows)->toHaveCount(2)

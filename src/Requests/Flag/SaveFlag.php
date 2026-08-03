@@ -2,6 +2,7 @@
 
 namespace DonorPerfect\Requests\Flag;
 
+use DonorPerfect\Requests\Concerns\DetectsDonorPerfectFailure;
 use DonorPerfect\Support\ActionParams;
 use Saloon\Enums\Method;
 use Saloon\Http\Request;
@@ -10,6 +11,7 @@ use Saloon\Traits\Plugins\AlwaysThrowOnErrors;
 class SaveFlag extends Request
 {
     use AlwaysThrowOnErrors;
+    use DetectsDonorPerfectFailure;
 
     protected Method $method = Method::POST;
 

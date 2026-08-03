@@ -10,6 +10,11 @@ use SimpleXMLElement;
 
 class CodeResource extends BaseResource
 {
+    /**
+     * DonorPerfect's hard row-retrieval limit (XML API manual, p.17).
+     */
+    private int $pageSize = 500;
+
     private const ALLOWED_FIELD_NAMES = [
         'CAMPAIGN',
         'GL_CODE',
@@ -41,19 +46,37 @@ class CodeResource extends BaseResource
         $connector = $this->connector;
         assert($connector instanceof DonorPerfect);
 
-        $sql = "SELECT CODE, DESCRIPTION, INACTIVE FROM dpcodes WHERE FIELD_NAME = '{$fieldName}'";
-        $response = $connector->send(new CallSqlRequest($sql));
-
-        $xml = $response->xml();
-
-        if (! $xml instanceof SimpleXMLElement || ! isset($xml->record)) {
-            return [];
-        }
-
+        // DP caps every query at 500 rows and gives no indication it truncated, so we
+        // page with `TOP 500 ... WHERE CODE > {last}` per the XML API manual (p.17).
+        // Without this an org with 500+ codes for one field silently loses the rest.
         $rows = [];
-        foreach ($xml->record as $record) {
-            $rows[] = $this->normalizeRecord($record);
-        }
+        $lastCode = null;
+
+        do {
+            $sql = "SELECT TOP {$this->pageSize} CODE, DESCRIPTION, INACTIVE FROM dpcodes"
+                ." WHERE FIELD_NAME = '{$fieldName}'";
+
+            if ($lastCode !== null) {
+                $sql .= " AND CODE > '".str_replace("'", "''", $lastCode)."'";
+            }
+
+            $sql .= ' ORDER BY CODE';
+
+            $xml = $connector->send(new CallSqlRequest($sql))->xml();
+
+            if (! $xml instanceof SimpleXMLElement || ! isset($xml->record)) {
+                break;
+            }
+
+            $pageCount = 0;
+
+            foreach ($xml->record as $record) {
+                $row = $this->normalizeRecord($record);
+                $rows[] = $row;
+                $lastCode = $row['code'];
+                $pageCount++;
+            }
+        } while ($pageCount === $this->pageSize);
 
         return $rows;
     }

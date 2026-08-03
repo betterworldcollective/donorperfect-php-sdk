@@ -2,6 +2,79 @@
 
 All notable changes to `betterworldcollective/donorperfect-php-sdk` will be documented in this file.
 
+## [0.4.0] — 2026-08-03
+
+Failures that DonorPerfect used to hide now surface as exceptions. **Expect calls that
+previously "succeeded" to start throwing** — in every case they were not actually doing
+anything, so the new exception is exposing a pre-existing silent failure, not creating one.
+
+Everything below was verified against a live DonorPerfect sandbox, not just mocks.
+
+### Fixed — writes that silently did nothing now throw
+
+DP answers HTTP 200 for failures, so `AlwaysThrowOnErrors` never fired. There are three
+response shapes and the SDK only recognised the first two:
+
+```
+success    <result><record><field value="297"/></record></result>
+envelope   <result><field name="success" value="false" reason="…"/><error>…</error></result>
+in-record  <result><record><field value="…this field does not exist"/></record></result>   ← missed
+```
+
+The third shape passed the old `isset($xml->record)` check and was reported as success:
+
+- **`UdfResource::save`** — a UDF written to a non-existent `field_name` reported success and wrote nothing. Silent data loss on every affected sync.
+- **`DonorPerfect::saveDonor` / `saveGift`** — cast DP's error text with `(int)` and returned **`0`** as the new record id. Callers then stored `0` as the CRM id.
+- **`FlagResource::save`** — a null `donor_id` returned an empty id. This is worse than a no-op: the row DP writes can surface on an unrelated donor created later. Observed in the sandbox.
+
+Detection now lives in the requests themselves (`DetectsDonorPerfectFailure`), matching how
+`CallSqlRequest` already worked, so resources no longer hand-roll their own checks.
+
+### Fixed — `UnauthorizedException` now means what it says
+
+`user not authorized for this api call.` is **not** an authentication failure. It is DP's
+blanket mask for any SQL-level failure — a duplicate row, a missing or misnamed parameter,
+an unknown id. Per the DP XML API manual (p.11) API keys carry no per-procedure permissions
+at all, so that text can never indicate a permissions problem.
+
+A genuinely bad key answers `Invalid token.` or `login failed` with no `<error>` element.
+Only that now raises `UnauthorizedException`; everything else raises `DonorPerfectException`
+with DP's real `<error>` text and an explicit note that it is not a key problem.
+
+`UnauthorizedException` now extends `DonorPerfectException`, so existing
+`catch (DonorPerfectException)` blocks keep covering every DP failure.
+
+### Fixed — 500-row cap silently truncating code and UDF lists
+
+DP caps every query at 500 rows and gives no indication it truncated (sandbox: 816 `dpcodes`
+rows, 500 returned, HTTP 200). `CodeResource::list` and `UdfMetadataResource::list` now page
+with `TOP 500 … WHERE col > {last} ORDER BY col` per the manual (p.17).
+
+This mattered downstream: callers that deactivate anything missing from the returned list
+were marking every code past the 500th as inactive, which removes it from dropdowns and
+fails validation on save.
+
+### Added — `FlagResource::listForDonor(int $donorId): array`
+
+Returns the upper-cased flag codes already on a donor. `dpflags` is keyed on
+(`donor_id`, `flag`) under a case-insensitive collation, so re-applying an existing flag is a
+primary-key violation — which DP reports as "user not authorized for this api call." Read
+with `listForDonor()` and write only what is missing to keep `save()` idempotent.
+
+```php
+$existing = $dp->flags()->listForDonor(297);          // ['CBM', 'STAFF']
+
+foreach (array_diff(['CBM', 'VOL'], $existing) as $code) {
+    $dp->flags()->save(297, $code, 'MyApp');          // only VOL is sent
+}
+```
+
+### Note — `@user_id` length is not a failure mode
+
+An earlier read of the docs suggested a `@user_id` longer than `varchar(20)` was rejected.
+It is not: DP truncates silently and the write succeeds. Verified in isolation on the
+sandbox.
+
 ## [0.3.6] — 2026-05-14
 
 - **`UdfResource::save`** — fix the `dp_save_udf_xml` payload to match DP docs (p.39): seven required params, route value to `@char_value` / `@date_value` / `@number_value` based on `data_type`, include `@user_id`. N-type values are now coerced to bare numerics (DP silently drops quoted ones).

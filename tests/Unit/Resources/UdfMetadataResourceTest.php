@@ -45,7 +45,7 @@ it('queries INFORMATION_SCHEMA.COLUMNS for the requested UDF table and maps SQL 
     $rows = $connector->udfMetadata()->list('DPUDF');
 
     $mockClient->assertSent(function (CallSqlRequest $request): bool {
-        return $request->query()->get('action') === "SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'DPUDF'";
+        return $request->query()->get('action') === "SELECT TOP 500 COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'DPUDF' ORDER BY COLUMN_NAME";
     });
 
     // donor_id is filtered out as a non-UDF FK; the rest map varchar/nvarchar→C, datetime→D, money→N

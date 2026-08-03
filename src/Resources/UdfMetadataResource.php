@@ -67,25 +67,42 @@ class UdfMetadataResource extends BaseResource
         $connector = $this->connector;
         assert($connector instanceof DonorPerfect);
 
-        $sql = "SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{$tableName}'";
-
-        $response = $connector->send(new CallSqlRequest($sql));
-        $xml = $response->xml();
-
-        if (! $xml instanceof SimpleXMLElement || ! isset($xml->record)) {
-            return [];
-        }
-
+        // Paged for the same reason as CodeResource: DP silently truncates at 500 rows,
+        // so an org with a large UDF table would lose columns off the end of the list.
         $rows = [];
-        foreach ($xml->record as $record) {
-            $row = $this->normalizeRecord($record);
+        $lastColumn = null;
 
-            if ($row === null) {
-                continue;
+        do {
+            $sql = 'SELECT TOP 500 COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS'
+                ." WHERE TABLE_NAME = '{$tableName}'";
+
+            if ($lastColumn !== null) {
+                $sql .= " AND COLUMN_NAME > '".str_replace("'", "''", $lastColumn)."'";
             }
 
-            $rows[] = $row;
-        }
+            $sql .= ' ORDER BY COLUMN_NAME';
+
+            $xml = $connector->send(new CallSqlRequest($sql))->xml();
+
+            if (! $xml instanceof SimpleXMLElement || ! isset($xml->record)) {
+                break;
+            }
+
+            $pageCount = 0;
+
+            foreach ($xml->record as $record) {
+                $pageCount++;
+                $lastColumn = trim((string) ($record->field[0]['value'] ?? ''));
+
+                $row = $this->normalizeRecord($record);
+
+                if ($row === null) {
+                    continue;
+                }
+
+                $rows[] = $row;
+            }
+        } while ($pageCount === 500);
 
         return $rows;
     }

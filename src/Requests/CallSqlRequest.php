@@ -3,6 +3,7 @@
 namespace DonorPerfect\Requests;
 
 use DonorPerfect\Exceptions\DonorPerfectException;
+use DonorPerfect\Exceptions\UnauthorizedException;
 use Saloon\Enums\Method;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
@@ -62,6 +63,14 @@ class CallSqlRequest extends Request
 
         $reason = $xml instanceof SimpleXMLElement ? trim((string) ($xml->field['reason'] ?? '')) : '';
         $detail = $xml instanceof SimpleXMLElement ? trim((string) ($xml->error ?? '')) : '';
+
+        // A dead or wrong API key answers `Invalid token.` / `login failed` with no
+        // <error> element — DP never reached the SQL. Everything else here is a query
+        // DP refused to run, whatever the misleading `reason` text says.
+        if ($detail === '' && (str_contains(strtolower($reason), 'invalid token') || str_contains(strtolower($reason), 'login failed'))) {
+            return new UnauthorizedException("DonorPerfect rejected the API key: {$reason}");
+        }
+
         $summary = trim($detail.($reason !== '' ? " — {$reason}" : '')) ?: 'unknown error';
 
         return new DonorPerfectException("DonorPerfect rejected SQL ({$summary}): {$this->sql}");

@@ -14,7 +14,7 @@ it('exposes a udfs() accessor on the connector', function () {
 
 it('builds dp_save_udf_xml with all 7 params per docs p.39 (C type routes value to @char_value)', function () {
     $mockClient = new MockClient([
-        SaveUdf::class => MockResponse::make('<?xml version="1.0"?><result><record><field name="success" value="true"/></record></result>'),
+        SaveUdf::class => MockResponse::make('<?xml version="1.0"?><result><record><field name="" id="" value="640"/></record></result>'),
     ]);
     $connector = (new DonorPerfect('k'))->withMockClient($mockClient);
 
@@ -36,7 +36,7 @@ it('builds dp_save_udf_xml with all 7 params per docs p.39 (C type routes value 
 
 it('routes Date values to @date_value (others null)', function () {
     $mockClient = new MockClient([
-        SaveUdf::class => MockResponse::make('<?xml version="1.0"?><result><record><field name="success" value="true"/></record></result>'),
+        SaveUdf::class => MockResponse::make('<?xml version="1.0"?><result><record><field name="" id="" value="640"/></record></result>'),
     ]);
     $connector = (new DonorPerfect('k'))->withMockClient($mockClient);
 
@@ -53,7 +53,7 @@ it('routes Date values to @date_value (others null)', function () {
 
 it('routes Number values to @number_value as bare numerics (DP rejects quoted numerics)', function () {
     $mockClient = new MockClient([
-        SaveUdf::class => MockResponse::make('<?xml version="1.0"?><result><record><field name="success" value="true"/></record></result>'),
+        SaveUdf::class => MockResponse::make('<?xml version="1.0"?><result><record><field name="" id="" value="640"/></record></result>'),
     ]);
     $connector = (new DonorPerfect('k'))->withMockClient($mockClient);
 
@@ -86,7 +86,7 @@ it('throws DonorPerfectException when DP returns an empty body', function () {
     $connector = (new DonorPerfect('k'))->withMockClient($mockClient);
 
     $connector->udfs()->save(1, 'PRONOUN_UDF', 'C', 'they/them');
-})->throws(DonorPerfectException::class, 'DonorPerfect rejected SaveUdf');
+})->throws(DonorPerfectException::class, 'dp_save_udf_xml');
 
 it('throws DonorPerfectException when DP returns a success=false rejection (no <record>)', function () {
     $mockClient = new MockClient([
@@ -97,7 +97,7 @@ it('throws DonorPerfectException when DP returns a success=false rejection (no <
     $connector = (new DonorPerfect('k'))->withMockClient($mockClient);
 
     $connector->udfs()->save(1, 'PRONOUN_UDF', 'C', 'they/them');
-})->throws(DonorPerfectException::class, 'DonorPerfect rejected SaveUdf');
+})->throws(DonorPerfectException::class, 'dp_save_udf_xml');
 
 it('throws DonorPerfectException when DP returns malformed XML', function () {
     $mockClient = new MockClient([
@@ -106,11 +106,11 @@ it('throws DonorPerfectException when DP returns malformed XML', function () {
     $connector = (new DonorPerfect('k'))->withMockClient($mockClient);
 
     $connector->udfs()->save(1, 'PRONOUN_UDF', 'C', 'they/them');
-})->throws(DonorPerfectException::class, 'DonorPerfect rejected SaveUdf');
+})->throws(DonorPerfectException::class, 'dp_save_udf_xml');
 
 it('returns the parsed array on a valid response', function () {
     $mockClient = new MockClient([
-        SaveUdf::class => MockResponse::make('<?xml version="1.0"?><result><record><field name="success" value="true"/></record></result>'),
+        SaveUdf::class => MockResponse::make('<?xml version="1.0"?><result><record><field name="" id="" value="640"/></record></result>'),
     ]);
     $connector = (new DonorPerfect('k'))->withMockClient($mockClient);
 

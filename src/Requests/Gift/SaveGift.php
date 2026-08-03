@@ -2,6 +2,7 @@
 
 namespace DonorPerfect\Requests\Gift;
 
+use DonorPerfect\Requests\Concerns\DetectsDonorPerfectFailure;
 use DonorPerfect\Support\ActionParams;
 use Saloon\Contracts\Body\HasBody;
 use Saloon\Enums\Method;
@@ -11,7 +12,7 @@ use Saloon\Traits\Plugins\AlwaysThrowOnErrors;
 
 class SaveGift extends Request implements HasBody
 {
-    use AlwaysThrowOnErrors, HasXmlBody;
+    use AlwaysThrowOnErrors, DetectsDonorPerfectFailure, HasXmlBody;
 
     protected Method $method = Method::POST;
 
