@@ -75,6 +75,10 @@ An earlier read of the docs suggested a `@user_id` longer than `varchar(20)` was
 It is not: DP truncates silently and the write succeeds. Verified in isolation on the
 sandbox.
 
+## [0.3.7] — 2026-06-22
+
+- **`CodeResource`** — allow `SOLICIT_CODE` and `SUB_SOLICIT_CODE` in the `dpcodes` field-name allowlist (#9).
+
 ## [0.3.6] — 2026-05-14
 
 - **`UdfResource::save`** — fix the `dp_save_udf_xml` payload to match DP docs (p.39): seven required params, route value to `@char_value` / `@date_value` / `@number_value` based on `data_type`, include `@user_id`. N-type values are now coerced to bare numerics (DP silently drops quoted ones).
