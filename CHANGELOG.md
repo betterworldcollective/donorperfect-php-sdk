@@ -2,6 +2,12 @@
 
 All notable changes to `betterworldcollective/donorperfect-php-sdk` will be documented in this file.
 
+## [0.4.1] — 2026-10-15
+
+### Changed
+
+- Allow Laravel 13: `illuminate/collections` and `illuminate/support` now accept `^13.0`.
+
 ## [0.4.0] — 2026-08-03
 
 Failures that DonorPerfect used to hide now surface as exceptions. **Expect calls that
